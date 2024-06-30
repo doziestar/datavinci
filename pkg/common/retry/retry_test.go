@@ -32,7 +32,7 @@ func TestRetry(t *testing.T) {
 				return func() error {
 					if count < 2 {
 						count++
-						return errors.NewError(errors.ErrorTypeConnection, "connection failed", nil)
+						return errors.NewError(errors.ErrorTypeDatabaseConnection, "connection failed", nil)
 					}
 					return nil
 				}
@@ -44,7 +44,7 @@ func TestRetry(t *testing.T) {
 		{
 			name: "Max retries reached",
 			fn: func() error {
-				return errors.NewError(errors.ErrorTypeConnection, "connection failed", nil)
+				return errors.NewError(errors.ErrorTypeDatabaseConnection, "connection failed", nil)
 			},
 			config:        DefaultConfig(),
 			expectedCalls: 5,
