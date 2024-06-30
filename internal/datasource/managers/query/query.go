@@ -72,7 +72,11 @@ func (qe *QueryExecutor) executeSQL(ctx context.Context, connector *connectors.S
 func (qe *QueryExecutor) executeMongo(ctx context.Context, connector *connectors.MongoConnector, query Query) ([]map[string]interface{}, error) {
     switch query.Type {
     case Select:
-        return connector.Query(ctx, query.Collection, query.Conditions)
+        filterJSON, err := json.Marshal(query.Conditions)
+        if err != nil {
+            return nil, errors.NewError(errors.ErrorTypeQuery, "failed to marshal query conditions", err)
+        }
+        return connector.Query(ctx, string(filterJSON), query.Collection)
     case Insert:
         affected, err := connector.Execute(ctx, "insert", query.Collection, query.Data)
         if err != nil {
