@@ -64,4 +64,6 @@ type Config struct {
 	Options                 map[string]interface{}
 	// Driver is the driver name for the data source.
 	Driver                  string
+	// RedisDB is the database number for Redis.
+	RedisDB                 int
 }
