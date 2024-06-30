@@ -25,7 +25,23 @@ DataVinci is a comprehensive data management and visualization tool designed for
 
 DataVinci follows a microservices architecture for scalability and maintainability. Here's a high-level overview of the system:
 
-![img_1.png](img_1.png)
+```mermaid
+
+graph TB
+    A[Web UI] --> B[API Gateway]
+    B --> C[Authentication Service]
+    B --> D[Data Source Service]
+    B --> E[Visualization Service]
+    B --> F[Report Service]
+    B --> G[AI Analysis Service]
+    B --> H[Real-time Processing Service]
+    D --> I[Data Connectors]
+    I --> J[(Various Data Sources)]
+    E & F & G & H --> K[Data Processing Engine]
+    K --> L[(Data Lake/Warehouse)]
+    M[Background Jobs] --> K
+
+```
 
 ## Getting Started
 
