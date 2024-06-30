@@ -11,7 +11,7 @@ import (
 
 func main() {
     config := &connectors.Config{
-        
+     
     }
     connector, err := connectors.ConnectorFactory(config)
     if err != nil {
