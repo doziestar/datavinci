@@ -3,6 +3,7 @@
 DataVinci is a comprehensive data management and visualization tool designed for the developer community. It enables users to visualize data from various sources, generate insights, analyze data with AI models, and receive real-time updates on anomalies.
 
 ## Table of Contents
+
 - [Features](#features)
 - [Architecture](#architecture)
 - [Getting Started](#getting-started)
@@ -125,6 +126,39 @@ datavinci/
 └── README.md
 ```
 
+### Service Communication
+
+The backend services communicate with each other using gRPC. The API Gateway acts as a reverse proxy for the frontend and forwards requests to the appropriate service.
+
+```mermaid
+graph TB
+    Client[Client] --> APIGateway[API Gateway]
+    subgraph "Service Mesh"
+        APIGateway --> Auth[Authentication Service]
+        APIGateway --> DataSource[Data Source Service]
+        APIGateway --> Visualization[Visualization Service]
+        APIGateway --> Report[Report Service]
+        APIGateway --> AI[AI Analysis Service]
+        APIGateway --> RealTime[Real-time Processing Service]
+    end
+    Auth -.->|gRPC| DataSource
+    DataSource -.->|gRPC| Visualization
+    Visualization -.->|gRPC| Report
+    DataSource -.->|gRPC| AI
+    DataSource -.->|gRPC| RealTime
+
+    MessageBroker[Message Broker] --> DataSource
+    MessageBroker --> Visualization
+    MessageBroker --> Report
+    MessageBroker --> AI
+    MessageBroker --> RealTime
+
+    EventStore[(Event Store)] --> MessageBroker
+
+    DataSource --> DB[(Data Sources)]
+    RealTime --> DB
+```
+
 ### Testing
 
 Run the tests with:
@@ -183,4 +217,7 @@ Contributions are welcome! Please read the [contributing guidelines](CONTRIBUTIN
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```
+
 ```
