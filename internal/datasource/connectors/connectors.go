@@ -62,4 +62,6 @@ type Config struct {
 	ConnMaxLifetimeSeconds  int
 	// ConnMaxIdleTimeSeconds is the maximum amount of time a connection may be idle before being closed.
 	Options                 map[string]interface{}
+	// Driver is the driver name for the data source.
+	Driver                  string
 }
