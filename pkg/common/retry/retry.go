@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"datavinci/pkg/common/errors"
+	"pkg/common/errors"
 )
 
 // Config represents the configuration for the retry mechanism.

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"datavinci/pkg/common/errors"
+	"pkg/common/errors"
 )
 
 func TestRetry(t *testing.T) {
