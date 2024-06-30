@@ -2,6 +2,7 @@ package connectors
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -90,42 +91,34 @@ func (c *MongoConnector) Close(ctx context.Context) error {
 
 // Query executes a query and returns the results as a slice of maps.
 func (c *MongoConnector) Query(ctx context.Context, query string, args ...interface{}) ([]map[string]interface{}, error) {
-	if c.client == nil {
-		return nil, errors.NewError(errors.ErrorTypeDatabaseConnection, errors.ErrorMessages[errors.ErrorTypeDatabaseConnection], nil)
-	}
+    if len(args) == 0 {
+        return nil, errors.NewError(errors.ErrorTypeQuery, "missing collection name", nil)
+    }
+    collection, ok := args[0].(string)
+    if !ok {
+        return nil, errors.NewError(errors.ErrorTypeQuery, "invalid collection name", nil)
+    }
 
-	// Parse the query string into a BSON document
-	var filter bson.D
-	log.Printf("Query: %s", query)
-	// convert the query string to a json object
-	 
-	err := bson.UnmarshalExtJSON([]byte(query), true, &filter)
-	if err != nil {
-		log.Printf("Failed to parse query: %v", err)
-		return nil, errors.NewError(errors.ErrorTypeQuery, "failed to parse query", err)
-	}
+    coll := c.client.Database(c.config.Database).Collection(collection)
 
-	collection := c.client.Database(c.config.Database).Collection(args[0].(string))
-	cursor, err := collection.Find(ctx, filter)
-	if err != nil {
-		return nil, errors.NewError(errors.ErrorTypeQuery, "failed to execute query", err)
-	}
-	defer cursor.Close(ctx)
+    var filter bson.M
+    err := json.Unmarshal([]byte(query), &filter)
+    if err != nil {
+        return nil, errors.NewError(errors.ErrorTypeQuery, "failed to parse query", err)
+    }
 
-	var results []map[string]interface{}
-	for cursor.Next(ctx) {
-		var result map[string]interface{}
-		if err := cursor.Decode(&result); err != nil {
-			return nil, errors.NewError(errors.ErrorTypeQuery, "failed to decode result", err)
-		}
-		results = append(results, result)
-	}
+    cursor, err := coll.Find(ctx, filter)
+    if err != nil {
+        return nil, errors.NewError(errors.ErrorTypeQuery, "failed to execute query", err)
+    }
+    defer cursor.Close(ctx)
 
-	if err := cursor.Err(); err != nil {
-		return nil, errors.NewError(errors.ErrorTypeQuery, "error during cursor iteration", err)
-	}
+    var results []map[string]interface{}
+    if err = cursor.All(ctx, &results); err != nil {
+        return nil, errors.NewError(errors.ErrorTypeQuery, "failed to decode query results", err)
+    }
 
-	return results, nil
+    return results, nil
 }
 
 // Execute executes a command and returns the number of affected documents.
