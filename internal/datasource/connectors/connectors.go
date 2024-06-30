@@ -66,4 +66,14 @@ type Config struct {
 	Driver                  string
 	// RedisDB is the database number for Redis.
 	RedisDB                 int
+	// IsWebSocket indicates whether the connection is a WebSocket.
+	IsWebSocket            bool
+	// WebSocketPath is the path for WebSocket connections.
+    PollingIntervalSeconds int
+	// WebSocketBufferSize is the buffer size for WebSocket connections.
+    WebSocketBufferSize    int
+	// TimeoutSeconds is the timeout for the HTTP client.
+	TimeoutSeconds         int
+	// BaseURL is the base URL for the API.
+	BaseURL                string
 }
