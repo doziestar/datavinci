@@ -3,9 +3,12 @@ package connectors
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"pkg/common/errors"
 	"pkg/common/retry"
+
+	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,27 +28,56 @@ func NewMongoConnector(config *Config) *MongoConnector {
 
 // Connect establishes a connection to the MongoDB database.
 func (c *MongoConnector) Connect(ctx context.Context) error {
-	uri := fmt.Sprintf("mongodb://%s:%s@%s:%d",
-		c.config.Username, c.config.Password, c.config.Host, c.config.Port)
+    uri := c.buildConnectionString()
+    
+    clientOptions := options.Client().ApplyURI(uri)
 
-	clientOptions := options.Client().ApplyURI(uri)
+	log.Printf("Connecting to MongoDB: %s", uri)
 
-	var client *mongo.Client
-	err := retry.Retry(ctx, func() error {
-		var err error
-		client, err = mongo.Connect(ctx, clientOptions)
-		if err != nil {
-			return errors.NewError(errors.ErrorTypeDatabaseConnection, "failed to connect to MongoDB", err)
-		}
-		return client.Ping(ctx, nil)
-	}, retry.DefaultConfig())
+    var client *mongo.Client
+    err := retry.Retry(ctx, func() error {
+        var err error
+        client, err = mongo.Connect(ctx, clientOptions)
+        if err != nil {
+			log.Printf("Failed to connect to MongoDB: %v", err)
+            return errors.NewError(errors.ErrorTypeConnection, "failed to connect to MongoDB", err)
+        }
+        return client.Ping(ctx, nil)
+    }, retry.DefaultConfig())
 
-	if err != nil {
-		return err
-	}
+    if err != nil {
+        return err
+    }
 
-	c.client = client
-	return nil
+    c.client = client
+    return nil
+}
+
+
+func (c *MongoConnector) buildConnectionString() string {
+    query := url.Values{}
+    for k, v := range c.config.Options {
+        query.Add(k, fmt.Sprintf("%v", v))
+    }
+
+    var baseURL string
+    if c.config.Port > 0 {
+        // If port is provided, use standard MongoDB protocol
+        baseURL = fmt.Sprintf("mongodb://%s:%s@%s:%d",
+            url.QueryEscape(c.config.Username),
+            url.QueryEscape(c.config.Password),
+            c.config.Host,
+            c.config.Port)
+    } else {
+        // If no port, assume it's MongoDB Atlas and use srv protocol
+        baseURL = fmt.Sprintf("mongodb+srv://%s:%s@%s",
+            url.QueryEscape(c.config.Username),
+            url.QueryEscape(c.config.Password),
+            c.config.Host)
+    }
+
+    // Append database and query parameters
+    return fmt.Sprintf("%s/%s?%s", baseURL, c.config.Database, query.Encode())
 }
 
 // Close closes the connection to the MongoDB database.
@@ -64,8 +96,12 @@ func (c *MongoConnector) Query(ctx context.Context, query string, args ...interf
 
 	// Parse the query string into a BSON document
 	var filter bson.D
+	log.Printf("Query: %s", query)
+	// convert the query string to a json object
+	 
 	err := bson.UnmarshalExtJSON([]byte(query), true, &filter)
 	if err != nil {
+		log.Printf("Failed to parse query: %v", err)
 		return nil, errors.NewError(errors.ErrorTypeQuery, "failed to parse query", err)
 	}
 
@@ -94,23 +130,69 @@ func (c *MongoConnector) Query(ctx context.Context, query string, args ...interf
 
 // Execute executes a command and returns the number of affected documents.
 func (c *MongoConnector) Execute(ctx context.Context, command string, args ...interface{}) (int64, error) {
-	if c.client == nil {
-		return 0, errors.NewError(errors.ErrorTypeDatabaseConnection, errors.ErrorMessages[errors.ErrorTypeDatabaseConnection], nil)
-	}
+    if len(args) == 0 {
+        return 0, errors.NewError(errors.ErrorTypeExecution, "missing collection name", nil)
+    }
+    collectionName, ok := args[0].(string)
+    if !ok {
+        return 0, errors.NewError(errors.ErrorTypeExecution, "invalid collection name", nil)
+    }
 
-	var doc bson.D
-	err := bson.UnmarshalExtJSON([]byte(command), true, &doc)
-	if err != nil {
-		return 0, errors.NewError(errors.ErrorTypeExecution, "failed to parse command", err)
-	}
+    collection := c.client.Database(c.config.Database).Collection(collectionName)
 
-	collection := c.client.Database(c.config.Database).Collection(args[0].(string))
-	result, err := collection.UpdateMany(ctx, doc[0].Value, doc[1].Value)
-	if err != nil {
-		return 0, errors.NewError(errors.ErrorTypeExecution, "failed to execute command", err)
-	}
+    var result int64
+    var err error
 
-	return result.ModifiedCount, nil
+    switch command {
+    case "insert":
+        if len(args) < 2 {
+            return 0, errors.NewError(errors.ErrorTypeExecution, "missing document to insert", nil)
+        }
+        doc, ok := args[1].(map[string]interface{})
+        if !ok {
+            return 0, errors.NewError(errors.ErrorTypeExecution, "invalid document format", nil)
+        }
+        _, err = collection.InsertOne(ctx, doc)
+        if err == nil {
+            result = 1
+        }
+    case "update":
+        if len(args) < 3 {
+            return 0, errors.NewError(errors.ErrorTypeExecution, "missing update parameters", nil)
+        }
+        filter, ok := args[1].(map[string]interface{})
+        if !ok {
+            return 0, errors.NewError(errors.ErrorTypeExecution, "invalid filter format", nil)
+        }
+        update, ok := args[2].(map[string]interface{})
+        if !ok {
+            return 0, errors.NewError(errors.ErrorTypeExecution, "invalid update format", nil)
+        }
+        updateResult, err := collection.UpdateMany(ctx, filter, bson.M{"$set": update})
+        if err == nil {
+            result = updateResult.ModifiedCount
+        }
+    case "delete":
+        if len(args) < 2 {
+            return 0, errors.NewError(errors.ErrorTypeExecution, "missing delete parameters", nil)
+        }
+        filter, ok := args[1].(map[string]interface{})
+        if !ok {
+            return 0, errors.NewError(errors.ErrorTypeExecution, "invalid filter format", nil)
+        }
+        deleteResult, err := collection.DeleteMany(ctx, filter)
+        if err == nil {
+            result = deleteResult.DeletedCount
+        }
+    default:
+        return 0, errors.NewError(errors.ErrorTypeExecution, fmt.Sprintf("unsupported command: %s", command), nil)
+    }
+
+    if err != nil {
+        return 0, errors.NewError(errors.ErrorTypeExecution, fmt.Sprintf("failed to execute command: %s", command), err)
+    }
+
+    return result, nil
 }
 
 // Ping checks if the database connection is still alive.
