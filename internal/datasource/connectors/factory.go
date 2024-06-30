@@ -14,7 +14,9 @@ func ConnectorFactory(config *Config) (Connector, error) {
 	case "mongo":
 		return NewMongoConnector(config), nil
 	case "api":
-		// return NewAPIConnector(config), nil
+		return NewAPIConnector(config), nil
+	case "file":
+		return NewFileConnector(config), nil
 	default:
 		return nil, fmt.Errorf("unsupported connector type: %s", config.Type)
 	}
