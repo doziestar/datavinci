@@ -27,6 +27,7 @@ var ErrorMessages = map[ErrorType]string{
 	ErrorTypeFileConnection: "file connection",
 	ErrorTypeNotFound:   "not found",
 	ErrorTypeConnection : "connection",
+	ErrorTypeTransformation: "transformation",
 }
 
 const (
@@ -56,6 +57,8 @@ const (
 	ErrorTypeNotFound
 	// ErrorTypeConnection represents a connection error.
 	ErrorTypeConnection
+	// ErrorTypeTransformation represents a transformation error.
+	ErrorTypeTransformation
 )
 
 // Error represents a custom error with additional context.
