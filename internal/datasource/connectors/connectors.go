@@ -76,4 +76,6 @@ type Config struct {
 	TimeoutSeconds         int
 	// BaseURL is the base URL for the API.
 	BaseURL                string
+	// BasePath is the base path for the file connector.
+	BasePath               string
 }
