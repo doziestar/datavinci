@@ -22,6 +22,8 @@ var ErrorMessages = map[ErrorType]string{
 	ErrorTypeExecution:  "execution",
 	ErrorTypeTransaction: "transaction",
 	ErrorTypeConfiguration: "configuration",
+	ErrorTypeApiConnection: "api connection",
+	ErrorTypeUnsupported: "unsupported",
 }
 
 const (
@@ -41,6 +43,10 @@ const (
 	ErrorTypeTransaction
 	// ErrorTypeConfiguration represents a configuration error.
 	ErrorTypeConfiguration
+	// ErrorTypeApiConnection represents an API connection error.
+	ErrorTypeApiConnection
+	// ErrorTypeUnsupported represents an unsupported operation error.
+	ErrorTypeUnsupported
 )
 
 // Error represents a custom error with additional context.
