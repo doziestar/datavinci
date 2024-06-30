@@ -21,6 +21,7 @@ var ErrorMessages = map[ErrorType]string{
 	ErrorTypeQuery:      "query",
 	ErrorTypeExecution:  "execution",
 	ErrorTypeTransaction: "transaction",
+	ErrorTypeConfiguration: "configuration",
 }
 
 const (
@@ -38,6 +39,8 @@ const (
 	ErrorTypeExecution
 	// ErrorTypeTransaction represents a transaction error.
 	ErrorTypeTransaction
+	// ErrorTypeConfiguration represents a configuration error.
+	ErrorTypeConfiguration
 )
 
 // Error represents a custom error with additional context.
