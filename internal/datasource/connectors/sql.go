@@ -26,13 +26,29 @@ func NewSQLConnector(config *Config) *SQLConnector {
 
 // Connect establishes a connection to the SQL database.
 func (c *SQLConnector) Connect(ctx context.Context) error {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		c.config.Host, c.config.Port, c.config.Username, c.config.Password, c.config.Database)
-	
+	var dsn string
+	var driverName string
+
+	switch c.config.Driver {
+	case "postgres":
+		driverName = "postgres"
+		dsn = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			c.config.Host, c.config.Port, c.config.Username, c.config.Password, c.config.Database)
+	case "mysql":
+		driverName = "mysql"
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
+			c.config.Username, c.config.Password, c.config.Host, c.config.Port, c.config.Database)
+	case "sqlite":
+		driverName = "sqlite3"
+		dsn = c.config.Database // For SQLite, the database is the file path
+	default:
+		return errors.NewError(errors.ErrorTypeConfiguration, "unsupported SQL driver", nil)
+	}
+
 	var db *sql.DB
 	err := retry.Retry(ctx, func() error {
 		var err error
-		db, err = sql.Open("postgres", dsn)
+		db, err = sql.Open(driverName, dsn)
 		if err != nil {
 			return errors.NewError(errors.ErrorTypeDatabaseConnection, "failed to open database", err)
 		}
