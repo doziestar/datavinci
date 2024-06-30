@@ -24,6 +24,7 @@ var ErrorMessages = map[ErrorType]string{
 	ErrorTypeConfiguration: "configuration",
 	ErrorTypeApiConnection: "api connection",
 	ErrorTypeUnsupported: "unsupported",
+	ErrorTypeFileConnection: "file connection",
 }
 
 const (
@@ -47,6 +48,8 @@ const (
 	ErrorTypeApiConnection
 	// ErrorTypeUnsupported represents an unsupported operation error.
 	ErrorTypeUnsupported
+	// ErrorTypeFileConnection represents a file connection error.
+	ErrorTypeFileConnection
 )
 
 // Error represents a custom error with additional context.
