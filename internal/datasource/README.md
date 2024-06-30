@@ -88,26 +88,3 @@ Run tests using:
 ```
 go test ./internal/datasource/...
 ```
-
-## Usage Example
-
-```go
-import "datavinci/internal/datasource"
-
-// Initialize data source
-ds, err := datasource.New(config)
-if err != nil {
-    log.Fatal(err)
-}
-
-// Execute query
-results, err := ds.Query("SELECT * FROM users")
-if err != nil {
-    log.Fatal(err)
-}
-
-// Process results
-for _, row := range results {
-    // Handle each row
-}
-```
