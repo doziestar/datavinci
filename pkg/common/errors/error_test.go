@@ -12,7 +12,7 @@ func TestIsConnectionError(t *testing.T) {
 		err  error
 		want bool
 	}{
-		{"Connection error", NewError(ErrorTypeConnection, "connection failed", nil), true},
+		{"Connection error", NewError(ErrorTypeDatabaseConnection, "connection failed", nil), true},
 		{"Network error", net.ErrClosed, true},
 		{"Other error", errors.New("some error"), false},
 	}
