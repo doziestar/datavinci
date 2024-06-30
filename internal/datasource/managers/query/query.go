@@ -70,43 +70,30 @@ func (qe *QueryExecutor) executeSQL(ctx context.Context, connector *connectors.S
 }
 
 func (qe *QueryExecutor) executeMongo(ctx context.Context, connector *connectors.MongoConnector, query Query) ([]map[string]interface{}, error) {
-	filter, err := json.Marshal(query.Conditions)
-	if err != nil {
-		return nil, errors.NewError(errors.ErrorTypeQuery, "failed to marshal MongoDB filter", err)
-	}
-	
-	switch query.Type {
-	case Select:
-		return connector.Query(ctx, string(filter), query.Collection)
-	case Insert:
-		data, err := json.Marshal(query.Data)
-		if err != nil {
-			return nil, errors.NewError(errors.ErrorTypeQuery, "failed to marshal MongoDB data", err)
-		}
-		affected, err := connector.Execute(ctx, fmt.Sprintf(`[{"insertOne": {"document": %s}}]`, string(data)), query.Collection)
-		if err != nil {
-			return nil, err
-		}
-		return []map[string]interface{}{{"affected_documents": affected}}, nil
-	case Update:
-		data, err := json.Marshal(query.Data)
-		if err != nil {
-			return nil, errors.NewError(errors.ErrorTypeQuery, "failed to marshal MongoDB data", err)
-		}
-		affected, err := connector.Execute(ctx, fmt.Sprintf(`[{"updateMany": {"filter": %s, "update": {"$set": %s}}}]`, string(filter), string(data)), query.Collection)
-		if err != nil {
-			return nil, err
-		}
-		return []map[string]interface{}{{"affected_documents": affected}}, nil
-	case Delete:
-		affected, err := connector.Execute(ctx, fmt.Sprintf(`[{"deleteMany": {"filter": %s}}]`, string(filter)), query.Collection)
-		if err != nil {
-			return nil, err
-		}
-		return []map[string]interface{}{{"affected_documents": affected}}, nil
-	default:
-		return nil, errors.NewError(errors.ErrorTypeUnsupported, "unsupported query type for MongoDB", nil)
-	}
+    switch query.Type {
+    case Select:
+        return connector.Query(ctx, query.Collection, query.Conditions)
+    case Insert:
+        affected, err := connector.Execute(ctx, "insert", query.Collection, query.Data)
+        if err != nil {
+            return nil, err
+        }
+        return []map[string]interface{}{{"affected_documents": affected}}, nil
+    case Update:
+        affected, err := connector.Execute(ctx, "update", query.Collection, query.Conditions, query.Data)
+        if err != nil {
+            return nil, err
+        }
+        return []map[string]interface{}{{"affected_documents": affected}}, nil
+    case Delete:
+        affected, err := connector.Execute(ctx, "delete", query.Collection, query.Conditions)
+        if err != nil {
+            return nil, err
+        }
+        return []map[string]interface{}{{"affected_documents": affected}}, nil
+    default:
+        return nil, errors.NewError(errors.ErrorTypeUnsupported, "unsupported query type for MongoDB", nil)
+    }
 }
 
 func (qe *QueryExecutor) executeRedis(ctx context.Context, connector *connectors.RedisConnector, query Query) ([]map[string]interface{}, error) {
