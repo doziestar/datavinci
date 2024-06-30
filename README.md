@@ -80,6 +80,8 @@ cp .env.example .env
 ```bash
 docker-compose up -d
 go run cmd/datavinci/main.go
+
+cd web/src-tauri && cargo tauri dev
 ```
 
 5. Access the web UI at `http://localhost:3000`.
