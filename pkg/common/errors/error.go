@@ -15,20 +15,29 @@ type ErrorType uint
 // ErrorMessages maps error types to human-readable messages.
 var ErrorMessages = map[ErrorType]string{
 	ErrorTypeUnknown:    "unknown",
-	ErrorTypeConnection: "connection",
+	ErrorTypeDatabaseConnection: "database connection not established",
 	ErrorTypeTimeout:    "timeout",
 	ErrorTypePermission: "permission",
+	ErrorTypeQuery:      "query",
+	ErrorTypeExecution:  "execution",
+	ErrorTypeTransaction: "transaction",
 }
 
 const (
 	// ErrorTypeUnknown represents an unknown error.
 	ErrorTypeUnknown ErrorType = iota
-	// ErrorTypeConnection represents a connection error.
-	ErrorTypeConnection
+	// ErrorTypeDatabaseConnection represents a connection error.
+	ErrorTypeDatabaseConnection
 	// ErrorTypeTimeout represents a timeout error.
 	ErrorTypeTimeout
 	// ErrorTypePermission represents a permission error.
 	ErrorTypePermission
+	// ErrorTypeQuery represents a query error.
+	ErrorTypeQuery
+	// ErrorTypeExecution represents an execution error.
+	ErrorTypeExecution
+	// ErrorTypeTransaction represents a transaction error.
+	ErrorTypeTransaction
 )
 
 // Error represents a custom error with additional context.
@@ -68,7 +77,7 @@ func NewError(errType ErrorType, message string, err error) *Error {
 func IsConnectionError(err error) bool {
 	var e *Error
 	if errors.As(err, &e) {
-		return e.Type == ErrorTypeConnection
+		return e.Type == ErrorTypeDatabaseConnection
 	}
 	return isNetworkError(err)
 }
