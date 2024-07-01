@@ -119,13 +119,13 @@ func (s *DataSourceServer) ExecuteCommand(ctx context.Context, req *grpc.Command
 	return &grpc.CommandResponse{AffectedRows: affected}, nil
 }
 
-func (s *DataSourceServer) GetConnectors(ctx context.Context, req *grpc.GetConnectorsRequest) (*grpc.GetConnectorsResponse, error) {
-	log.Printf("Received GetConnectors request")
+// func (s *DataSourceServer) GetConnectors(ctx context.Context, req *grpc.GetConnectorsRequest) (*grpc.GetConnectorsResponse, error) {
+// 	log.Printf("Received GetConnectors request")
 	
-	connectorNames := s.manager.GetConnectorNames()
-	log.Printf("Retrieved %d connectors", len(connectorNames))
-	return &grpc.GetConnectorsResponse{ConnectorNames: connectorNames}, nil
-}
+// 	connectorNames, err := s.manager.GetConnector()
+// 	log.Printf("Retrieved %d connectors", len(connectorNames))
+// 	return &grpc.GetConnectorsResponse{ConnectorNames: connectorNames}, nil
+// }
 
 func (s *DataSourceServer) AddConnector(ctx context.Context, req *grpc.AddConnectorRequest) (*grpc.AddConnectorResponse, error) {
 	log.Printf("Received AddConnector request for connector: %s", req.Name)
