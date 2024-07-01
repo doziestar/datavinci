@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package datasource;
 
-option go_package = "pkg/datasource";
+option go_package = "datasource/grpc";
 
 service DataSourceService {
   rpc Connect(ConnectRequest) returns (ConnectResponse) {}
