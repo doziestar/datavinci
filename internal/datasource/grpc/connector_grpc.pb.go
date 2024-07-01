@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: connector.proto
 
-package datasource
+package grpc
 
 import (
 	context "context"
