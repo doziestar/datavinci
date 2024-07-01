@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/lib/pq v1.10.9
 	go.mongodb.org/mongo-driver v1.16.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require (
@@ -13,13 +14,11 @@ require (
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
 )
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
