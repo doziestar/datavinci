@@ -126,6 +126,83 @@ graph TB
     G --> R[(ACL Database)]
 ```
 
+## Folder Structure
+
+```plaintext
+datavinci/
+├── api/
+│   └── proto/
+│       ├── auth.proto
+│       ├── authorization.proto
+│       └── common.proto
+├── cmd/
+│   ├── authservice/
+│   │   └── main.go
+│   ├── authzservice/
+│   │   └── main.go
+│   └── gateway/
+│       └── main.go
+├── internal/
+│   ├── auth/
+│   │   ├── handler/
+│   │   │   └── auth_handler.go
+│   │   ├── repository/
+│   │   │   └── user_repository.go
+│   │   ├── service/
+│   │   │   └── auth_service.go
+│   │   └── token/
+│   │       └── jwt.go
+│   ├── authz/
+│   │   ├── handler/
+│   │   │   └── authz_handler.go
+│   │   ├── repository/
+│   │   │   └── rbac_repository.go
+│   │   └── service/
+│   │       └── authz_service.go
+│   ├── config/
+│   │   └── config.go
+│   ├── database/
+│   │   ├── postgres.go
+│   │   └── redis.go
+│   ├── interceptor/
+│   │   ├── auth_interceptor.go
+│   │   └── logging_interceptor.go
+│   └── model/
+│       ├── user.go
+│       └── role.go
+├── pkg/
+│   ├── cryptography/
+│   │   └── hash.go
+│   ├── logger/
+│   │   └── logger.go
+│   └── validator/
+│       └── validator.go
+├── scripts/
+│   ├── generate_proto.sh
+│   └── generate_certs.sh
+├── deployments/
+│   ├── docker/
+│   │   ├── authservice.Dockerfile
+│   │   ├── authzservice.Dockerfile
+│   │   └── gateway.Dockerfile
+│   └── k8s/
+│       ├── authservice.yaml
+│       ├── authzservice.yaml
+│       └── gateway.yaml
+├── tests/
+│   ├── integration/
+│   │   ├── auth_test.go
+│   │   └── authz_test.go
+│   └── unit/
+│       ├── auth_test.go
+│       └── authz_test.go
+├── go.mod
+├── go.sum
+├── Makefile
+├── docker-compose.yml
+└── README.md
+```
+
 ## Authentication Flow
 
 1. Client sends login request to API Gateway
