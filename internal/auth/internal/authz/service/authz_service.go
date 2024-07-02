@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strconv"
 
 	"auth/ent"
 	"auth/internal/repository"
@@ -82,7 +83,9 @@ func (s *AuthzService) CreateRole(ctx context.Context, req *pb.CreateRoleRequest
 		role.Permissions[i] = perm.Resource + ":" + perm.Action
 	}
 
-	if err := s.roleRepo.Create(ctx, role); err != nil {
+	var err error
+
+	if role, err = s.roleRepo.Create(ctx, role); err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create role: %v", err)
 	}
 
@@ -111,7 +114,7 @@ func (s *AuthzService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest
 		}
 	}
 
-	if err := s.roleRepo.Update(ctx, role); err != nil {
+	if role, err = s.roleRepo.Update(ctx, role); err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to update role: %v", err)
 	}
 
@@ -149,7 +152,12 @@ func (s *AuthzService) GetRole(ctx context.Context, req *pb.GetRoleRequest) (*pb
 }
 
 func (s *AuthzService) ListRoles(ctx context.Context, req *pb.ListRolesRequest) (*pb.ListRolesResponse, error) {
-	roles, nextPageToken, err := s.roleRepo.List(ctx, int(req.PageSize), req.PageToken)
+	nextPageToken, err := strconv.Atoi(req.PageToken)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid page token: %v", err)
+	}
+	nextPageToken += int(req.PageSize)
+	roles, err := s.roleRepo.List(ctx, int(req.PageSize), nextPageToken)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to list roles: %v", err)
 	}
@@ -165,7 +173,7 @@ func (s *AuthzService) ListRoles(ctx context.Context, req *pb.ListRolesRequest) 
 
 	return &pb.ListRolesResponse{
 		Roles:         pbRoles,
-		NextPageToken: nextPageToken,
+		NextPageToken: strconv.Itoa(nextPageToken),
 	}, nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"auth/ent/role"
+	"auth/ent/user"
 )
 
 type RoleRepository struct {
@@ -114,6 +115,24 @@ func (r *RoleRepository) Search(ctx context.Context, query string) ([]*ent.Role,
 	return r.client.Role.Query().
 		Where(role.NameContains(query)).
 		All(ctx)
+}
+
+func (r *RoleRepository) GetRolesByUserID(ctx context.Context, userID string) ([]*ent.Role, error) {
+	return r.client.Role.Query().
+		Where(role.HasUsersWith(user.ID(userID))).
+		All(ctx)
+}
+
+func (r *RoleRepository) AssignRoleToUser(ctx context.Context, userID, roleID string) error {
+	return r.client.User.UpdateOneID(userID).
+		AddRoleIDs(roleID).
+		Exec(ctx)
+}
+
+func (r *RoleRepository) RemoveRoleFromUser(ctx context.Context, userID, roleID string) error {
+	return r.client.User.UpdateOneID(userID).
+		RemoveRoleIDs(roleID).
+		Exec(ctx)
 }
 
 // func (r *RoleRepository) GetRolesByPermission(ctx context.Context, permission string) ([]*ent.Role, error) {
