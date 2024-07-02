@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package datavinci.auth;
 
-option go_package = "datavinci/auth";
+option go_package = "datavinci/internal/auth/grpc";
 
 import "google/protobuf/empty.proto";
 import "common.proto";
@@ -63,7 +63,7 @@ message ValidateTokenRequest {
 }
 
 message ValidateTokenResponse {
-  datavinci.common.User user = 1;
+  User user = 1;
 }
 
 message RegisterUserRequest {
@@ -73,7 +73,7 @@ message RegisterUserRequest {
 }
 
 message RegisterUserResponse {
-  datavinci.common.User user = 1;
+  User user = 1;
 }
 
 message UpdateUserRequest {
@@ -84,7 +84,7 @@ message UpdateUserRequest {
 }
 
 message UpdateUserResponse {
-  datavinci.common.User user = 1;
+  User user = 1;
 }
 
 message DeleteUserRequest {
@@ -96,5 +96,5 @@ message GetUserRequest {
 }
 
 message GetUserResponse {
-  datavinci.common.User user = 1;
+  User user = 1;
 }

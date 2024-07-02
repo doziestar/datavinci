@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "datasource/grpc" 
+	pb "datasource/grpc"
 )
 
 func main() {
@@ -39,8 +39,8 @@ func main() {
 		"type":       "INSERT",
 		"collection": "users",
 		"data": map[string]interface{}{
-			"name": "John Doe",
-			"age":  30,
+			"name":  "John Doe",
+			"age":   30,
 			"email": "john@example.com",
 			"address": map[string]interface{}{
 				"city": "New York",

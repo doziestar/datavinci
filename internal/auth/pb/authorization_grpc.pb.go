@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: authorization.proto
 
-package auth
+package grpc
 
 import (
 	context "context"
@@ -20,17 +20,17 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	AuthorizationService_CheckPermission_FullMethodName          = "/datavinci.authorization.AuthorizationService/CheckPermission"
-	AuthorizationService_GetUserRoles_FullMethodName             = "/datavinci.authorization.AuthorizationService/GetUserRoles"
-	AuthorizationService_AssignRoleToUser_FullMethodName         = "/datavinci.authorization.AuthorizationService/AssignRoleToUser"
-	AuthorizationService_RemoveRoleFromUser_FullMethodName       = "/datavinci.authorization.AuthorizationService/RemoveRoleFromUser"
-	AuthorizationService_CreateRole_FullMethodName               = "/datavinci.authorization.AuthorizationService/CreateRole"
-	AuthorizationService_UpdateRole_FullMethodName               = "/datavinci.authorization.AuthorizationService/UpdateRole"
-	AuthorizationService_DeleteRole_FullMethodName               = "/datavinci.authorization.AuthorizationService/DeleteRole"
-	AuthorizationService_GetRole_FullMethodName                  = "/datavinci.authorization.AuthorizationService/GetRole"
-	AuthorizationService_ListRoles_FullMethodName                = "/datavinci.authorization.AuthorizationService/ListRoles"
-	AuthorizationService_AddPermissionToRole_FullMethodName      = "/datavinci.authorization.AuthorizationService/AddPermissionToRole"
-	AuthorizationService_RemovePermissionFromRole_FullMethodName = "/datavinci.authorization.AuthorizationService/RemovePermissionFromRole"
+	AuthorizationService_CheckPermission_FullMethodName          = "/datavinci.auth.AuthorizationService/CheckPermission"
+	AuthorizationService_GetUserRoles_FullMethodName             = "/datavinci.auth.AuthorizationService/GetUserRoles"
+	AuthorizationService_AssignRoleToUser_FullMethodName         = "/datavinci.auth.AuthorizationService/AssignRoleToUser"
+	AuthorizationService_RemoveRoleFromUser_FullMethodName       = "/datavinci.auth.AuthorizationService/RemoveRoleFromUser"
+	AuthorizationService_CreateRole_FullMethodName               = "/datavinci.auth.AuthorizationService/CreateRole"
+	AuthorizationService_UpdateRole_FullMethodName               = "/datavinci.auth.AuthorizationService/UpdateRole"
+	AuthorizationService_DeleteRole_FullMethodName               = "/datavinci.auth.AuthorizationService/DeleteRole"
+	AuthorizationService_GetRole_FullMethodName                  = "/datavinci.auth.AuthorizationService/GetRole"
+	AuthorizationService_ListRoles_FullMethodName                = "/datavinci.auth.AuthorizationService/ListRoles"
+	AuthorizationService_AddPermissionToRole_FullMethodName      = "/datavinci.auth.AuthorizationService/AddPermissionToRole"
+	AuthorizationService_RemovePermissionFromRole_FullMethodName = "/datavinci.auth.AuthorizationService/RemovePermissionFromRole"
 )
 
 // AuthorizationServiceClient is the client API for AuthorizationService service.
@@ -460,7 +460,7 @@ func _AuthorizationService_RemovePermissionFromRole_Handler(srv interface{}, ctx
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AuthorizationService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "datavinci.authorization.AuthorizationService",
+	ServiceName: "datavinci.auth.AuthorizationService",
 	HandlerType: (*AuthorizationServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

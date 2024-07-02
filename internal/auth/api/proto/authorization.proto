@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package datavinci.authorization;
+package datavinci.auth;
 
-option go_package = "datavinci/auth";
+option go_package = "datavinci/internal/auth/grpc";
 
 import "google/protobuf/empty.proto";
 import "common.proto";
@@ -44,7 +44,7 @@ service AuthorizationService {
 
 message CheckPermissionRequest {
   string user_id = 1;
-  datavinci.common.Permission permission = 2;
+  Permission permission = 2;
 }
 
 message CheckPermissionResponse {
@@ -56,7 +56,7 @@ message GetUserRolesRequest {
 }
 
 message GetUserRolesResponse {
-  repeated datavinci.common.Role roles = 1;
+  repeated Role roles = 1;
 }
 
 message AssignRoleToUserRequest {
@@ -71,21 +71,21 @@ message RemoveRoleFromUserRequest {
 
 message CreateRoleRequest {
   string name = 1;
-  repeated datavinci.common.Permission permissions = 2;
+  repeated Permission permissions = 2;
 }
 
 message CreateRoleResponse {
-  datavinci.common.Role role = 1;
+  Role role = 1;
 }
 
 message UpdateRoleRequest {
   string role_id = 1;
   optional string name = 2;
-  repeated datavinci.common.Permission permissions = 3;
+  repeated Permission permissions = 3;
 }
 
 message UpdateRoleResponse {
-  datavinci.common.Role role = 1;
+  Role role = 1;
 }
 
 message DeleteRoleRequest {
@@ -97,7 +97,7 @@ message GetRoleRequest {
 }
 
 message GetRoleResponse {
-  datavinci.common.Role role = 1;
+  Role role = 1;
 }
 
 message ListRolesRequest {
@@ -106,16 +106,16 @@ message ListRolesRequest {
 }
 
 message ListRolesResponse {
-  repeated datavinci.common.Role roles = 1;
+  repeated Role roles = 1;
   string next_page_token = 2;
 }
 
 message AddPermissionToRoleRequest {
   string role_id = 1;
-  datavinci.common.Permission permission = 2;
+  Permission permission = 2;
 }
 
 message RemovePermissionFromRoleRequest {
   string role_id = 1;
-  datavinci.common.Permission permission = 2;
+  Permission permission = 2;
 }
