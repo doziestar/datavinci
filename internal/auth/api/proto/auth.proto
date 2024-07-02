@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package datavinci.auth;
+
+option go_package = "datavinci/auth";
+
+import "google/protobuf/empty.proto";
+import "common.proto";
+
+service AuthService {
+  // Login authenticates a user and returns a JWT token
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+
+  // Logout invalidates the user's current session
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {}
+
+  // RefreshToken refreshes an existing JWT token
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {}
+
+  // ValidateToken validates a JWT token and returns the associated user
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse) {}
+
+  // RegisterUser registers a new user
+  rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse) {}
+
+  // UpdateUser updates an existing user's information
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {}
+
+  // DeleteUser deletes a user from the system
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {}
+
+  // GetUser retrieves a user's information
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {}
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+}
+
+message LogoutRequest {
+  string access_token = 1;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  datavinci.common.User user = 1;
+}
+
+message RegisterUserRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message RegisterUserResponse {
+  datavinci.common.User user = 1;
+}
+
+message UpdateUserRequest {
+  string user_id = 1;
+  optional string username = 2;
+  optional string email = 3;
+  optional string password = 4;
+}
+
+message UpdateUserResponse {
+  datavinci.common.User user = 1;
+}
+
+message DeleteUserRequest {
+  string user_id = 1;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  datavinci.common.User user = 1;
+}

@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package datavinci.authorization;
+
+option go_package = "datavinci/auth";
+
+import "google/protobuf/empty.proto";
+import "common.proto";
+
+service AuthorizationService {
+  // CheckPermission checks if a user has a specific permission
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse) {}
+
+  // GetUserRoles retrieves all roles assigned to a user
+  rpc GetUserRoles(GetUserRolesRequest) returns (GetUserRolesResponse) {}
+
+  // AssignRoleToUser assigns a role to a user
+  rpc AssignRoleToUser(AssignRoleToUserRequest) returns (google.protobuf.Empty) {}
+
+  // RemoveRoleFromUser removes a role from a user
+  rpc RemoveRoleFromUser(RemoveRoleFromUserRequest) returns (google.protobuf.Empty) {}
+
+  // CreateRole creates a new role
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse) {}
+
+  // UpdateRole updates an existing role
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse) {}
+
+  // DeleteRole deletes a role
+  rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty) {}
+
+  // GetRole retrieves role information
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse) {}
+
+  // ListRoles lists all roles in the system
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {}
+
+  // AddPermissionToRole adds a permission to a role
+  rpc AddPermissionToRole(AddPermissionToRoleRequest) returns (google.protobuf.Empty) {}
+
+  // RemovePermissionFromRole removes a permission from a role
+  rpc RemovePermissionFromRole(RemovePermissionFromRoleRequest) returns (google.protobuf.Empty) {}
+}
+
+message CheckPermissionRequest {
+  string user_id = 1;
+  datavinci.common.Permission permission = 2;
+}
+
+message CheckPermissionResponse {
+  bool has_permission = 1;
+}
+
+message GetUserRolesRequest {
+  string user_id = 1;
+}
+
+message GetUserRolesResponse {
+  repeated datavinci.common.Role roles = 1;
+}
+
+message AssignRoleToUserRequest {
+  string user_id = 1;
+  string role_id = 2;
+}
+
+message RemoveRoleFromUserRequest {
+  string user_id = 1;
+  string role_id = 2;
+}
+
+message CreateRoleRequest {
+  string name = 1;
+  repeated datavinci.common.Permission permissions = 2;
+}
+
+message CreateRoleResponse {
+  datavinci.common.Role role = 1;
+}
+
+message UpdateRoleRequest {
+  string role_id = 1;
+  optional string name = 2;
+  repeated datavinci.common.Permission permissions = 3;
+}
+
+message UpdateRoleResponse {
+  datavinci.common.Role role = 1;
+}
+
+message DeleteRoleRequest {
+  string role_id = 1;
+}
+
+message GetRoleRequest {
+  string role_id = 1;
+}
+
+message GetRoleResponse {
+  datavinci.common.Role role = 1;
+}
+
+message ListRolesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListRolesResponse {
+  repeated datavinci.common.Role roles = 1;
+  string next_page_token = 2;
+}
+
+message AddPermissionToRoleRequest {
+  string role_id = 1;
+  datavinci.common.Permission permission = 2;
+}
+
+message RemovePermissionFromRoleRequest {
+  string role_id = 1;
+  datavinci.common.Permission permission = 2;
+}
