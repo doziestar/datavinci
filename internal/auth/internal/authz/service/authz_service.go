@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"auth/ent"
-	"auth/internal/model"
 	"auth/internal/repository"
 
 	"google.golang.org/grpc/codes"
@@ -131,7 +130,7 @@ func (s *AuthzService) DeleteRole(ctx context.Context, req *pb.DeleteRoleRequest
 
 	}
 
-    return &emptypb.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *AuthzService) GetRole(ctx context.Context, req *pb.GetRoleRequest) (*pb.GetRoleResponse, error) {
@@ -186,7 +185,7 @@ func (s *AuthzService) RemovePermissionFromRole(ctx context.Context, req *pb.Rem
 	return &emptypb.Empty{}, nil
 }
 
-func hasPermission(role *model.Role, resource, action string) bool {
+func hasPermission(role *ent.Role, resource, action string) bool {
 	permission := resource + ":" + action
 	for _, perm := range role.Permissions {
 		if perm == permission {

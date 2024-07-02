@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-    pb "auth/pb"
+	pb "auth/pb"
 )
 
 type AuthService struct {
@@ -39,7 +39,7 @@ func (s *AuthService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 		return nil, status.Errorf(codes.Internal, "Failed to fetch user: %v", err)
 	}
 
-	if user == nil || !user.CheckPassword(req.Password) {
+	if user == nil || !s.userRepo.CheckPassword(ctx, req.Password) {
 		return nil, status.Errorf(codes.Unauthenticated, "Invalid username or password")
 	}
 

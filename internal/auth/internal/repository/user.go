@@ -7,6 +7,8 @@ import (
 
 	"auth/ent/role"
 	"auth/ent/user"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserRepository struct {
@@ -116,16 +118,27 @@ func (r *UserRepository) GetUsersByRole(ctx context.Context, roleID string) ([]*
 		All(ctx)
 }
 
-func (u *UserRepository) CheckPassword(password string) bool {
-    err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
-    return err == nil
+func (r *UserRepository) CheckPassword(ctx context.Context, password string) bool {
+	user, err := r.client.User.Query().Where(user.Password(password)).Only(ctx)
+	if err != nil {
+		return false
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return false
+	}
+	return true
 }
 
-func (u *UserRepository) SetPassword(password string) error {
-    hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-    if err != nil {
-        return err
-    }
-    u.Password = string(hash)
-    return nil
+func (r *UserRepository) SetPassword(ctx context.Context, password string) error {
+	user, err := r.client.User.Query().Where(user.Password(password)).Only(ctx)
+	if err != nil {
+		return err
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	return r.client.User.UpdateOne(user).SetPassword(string(hashedPassword)).Exec(ctx)
 }

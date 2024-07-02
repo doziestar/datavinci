@@ -44,23 +44,23 @@ func (User) Edges() []ent.Edge {
 
 // Hooks of the User.
 func (User) Hooks() []ent.Hook {
-    return []ent.Hook{
-        HashPassword(),
-    }
+	return []ent.Hook{
+		HashPassword(),
+	}
 }
 
 // HashPassword is a hook that hashes the password before creating or updating a user.
 func HashPassword() ent.Hook {
-    return func(next ent.Mutator) ent.Mutator {
-        return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-            if password, ok := m.Field("password"); ok {
-                hash, err := bcrypt.GenerateFromPassword([]byte(password.(string)), bcrypt.DefaultCost)
-                if err != nil {
-                    return nil, err
-                }
-                m.SetField("password", string(hash))
-            }
-            return next.Mutate(ctx, m)
-        })
-    }
+	return func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if password, ok := m.Field("password"); ok {
+				hash, err := bcrypt.GenerateFromPassword([]byte(password.(string)), bcrypt.DefaultCost)
+				if err != nil {
+					return nil, err
+				}
+				m.SetField("password", string(hash))
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
 }
