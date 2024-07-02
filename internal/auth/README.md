@@ -49,6 +49,83 @@ graph TB
     K -->|Service-to-Service Auth| H
 ```
 
+```mermaid
+graph TB
+    A[Client] -->|HTTPS| B(API Gateway)
+    B -->|gRPC| C{Auth Service}
+    B -->|gRPC| D{Data Source Service}
+    B -->|gRPC| E{Visualization Service}
+
+    C -->|Validate Token| F[(User DB)]
+    C -->|Store Token| G[(Token Cache)]
+
+    H{Authorization Service} -->|Check Permissions| I[(RBAC DB)]
+
+    J{Auth Interceptor} -->|Intercept Requests| D
+    J -->|Intercept Requests| E
+    J -->|Validate Token| C
+    J -->|Check Permissions| H
+
+    K{mTLS} -->|Service-to-Service Auth| D
+    K -->|Service-to-Service Auth| E
+    K -->|Service-to-Service Auth| C
+    K -->|Service-to-Service Auth| H
+
+    subgraph "External"
+    A
+    end
+
+    subgraph "API Gateway"
+    B
+    end
+
+    subgraph "Microservices"
+    C
+    D
+    E
+    H
+    end
+
+    subgraph "Security"
+    J
+    K
+    end
+
+    subgraph "Data Stores"
+    F
+    G
+    I
+    end
+```
+
+```mermaid
+graph TB
+    A[Client] -->|Request| B(API Gateway)
+    B --> C{Auth Middleware}
+    C -->|Authenticate| D[AuthManager]
+    D -->|Verify Credentials| E[CredentialStore]
+    C -->|Authorize| F[PermissionManager]
+    F -->|Check Permissions| G[ACL Store]
+    C -->|Log Event| H[AuditLogger]
+    C -->|If Authorized| I[Data Source Connector]
+    I --> J[Data Source]
+
+    subgraph "Authentication"
+    D --> K[BasicAuthProvider]
+    D --> L[APIKeyAuthProvider]
+    D --> M[OAuthProvider]
+    end
+
+    subgraph "Authorization"
+    F --> N[RoleManager]
+    F --> O[PermissionChecker]
+    end
+
+    H --> P[(Audit Logs)]
+    E --> Q[(Encrypted Credentials)]
+    G --> R[(ACL Database)]
+```
+
 ## Authentication Flow
 
 1. Client sends login request to API Gateway
@@ -142,8 +219,8 @@ func Login(username, password string) (string, error) {
 
 - JWTs are stateless and contain encoded user information and permissions
 - Tokens have an expiration time (e.g., 1 hour)
-- Implement token refresh mechanism for long-lived sessions
-- Store active tokens in a distributed cache (e.g., Redis) for quick validation and revocation
+- We will need to implement token refresh mechanism for long-lived sessions
+- Then store active tokens in a distributed cache (e.g., Redis) for quick validation and revocation
 
 Token refresh example:
 
@@ -202,12 +279,10 @@ Services communicate with each other using mutual TLS (mTLS) for authentication:
 
 ## Security Considerations
 
-- Use strong, frequently rotated encryption keys for JWT signing
-- Implement rate limiting to prevent brute-force attacks
-- Use HTTPS for all external communications
-- Regularly audit and update service permissions
-- Implement proper error handling to avoid information leakage
-- Use secure password hashing (e.g., bcrypt) for storing user credentials
+- We will use strong, frequently rotated encryption keys for JWT signing
+- Then we will Implement rate limiting to prevent brute-force attacks
+- All external communicationsUse will use HTTPS with TLS
+- Proper error handling to avoid information leakage
 
 ## API Reference
 
