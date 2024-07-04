@@ -19,6 +19,10 @@ const config: Config = {
       animation: {
         glow: "glow 3s linear infinite",
       },
+      backdropFilter: {
+        none: "none",
+        blur: "blur(20px)",
+      },
     },
     colors: {
       border: "hsl(var(--border))",
@@ -78,7 +82,16 @@ const config: Config = {
         },
       },
     },
+    variants: {
+      extend: {
+        backdropFilter: ["responsive"],
+      },
+    },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    require("tailwindcss-gradients"),
+    require("@tailwindcss/forms"),
+  ],
 };
 export default config;
