@@ -402,6 +402,94 @@ cache:
   db: 0
 ```
 
+## Database and Data Migration
+
+### Overview
+
+Database migration is a crucial part of managing the DataVinci system's evolution. We use Atlas, a powerful database migration tool, to handle schema changes and data migrations across different environments.
+
+### Database Schema
+
+The DataVinci system primarily uses two databases:
+
+1. User Database (PostgreSQL):
+
+   - Stores user information, credentials, and metadata
+
+2. RBAC Database (PostgreSQL):
+   - Stores roles, permissions, and user-role assignments
+
+### Using Atlas for Migrations
+
+Atlas provides a declarative, version-controlled approach to database schema management. Here's how to use Atlas in the DataVinci project:
+
+#### Installation
+
+Install Atlas CLI:
+
+```bash
+curl -sSf https://atlasgo.sh | sh
+```
+
+#### Directory Structure
+
+```
+datavinci/
+├── ent/
+│   ├── schema/
+│   │   ├── user.go
+│   │   └── role.go
+│   └── migrate/
+│       └── migrations/
+│           ├── 20230701120000_initial_schema.sql
+│           └── 20230702130000_add_user_preferences.sql
+```
+
+#### Creating a New Migration
+
+To create a new migration:
+
+```bash
+atlas migrate diff migration_name \
+  --dir "file://ent/migrate/migrations" \
+  --to "ent://ent/schema" \
+  --dev-url "docker://postgres/15/datavinci?search_path=public"
+```
+
+This command:
+
+- Compares the current database schema with the Ent schema
+- Generates a new migration file in `ent/migrate/migrations`
+- Uses a Docker-based PostgreSQL instance for development
+
+#### Applying Migrations
+
+To apply migrations:
+
+```bash
+atlas migrate apply \
+  --dir "file://ent/migrate/migrations" \
+  --url "postgres://username:password@localhost:5432/datavinci?sslmode=disable"
+```
+
+This command applies all pending migrations to the specified database.
+
+#### Reverting Migrations
+
+To revert the last migration:
+
+```bash
+atlas migrate down \
+  --dir "file://ent/migrate/migrations" \
+  --url "postgres://username:password@localhost:5432/datavinci?sslmode=disable"
+```
+
+### Monitoring and Alerting
+
+- We need to implement logging for all migration operations
+- Then, Set up alerts for failed migrations
+- And monitor database performance metrics during and after migrations
+
 ## Troubleshooting
 
 Common issues and solutions:
