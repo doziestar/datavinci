@@ -31,7 +31,7 @@ func main() {
 
 	userRepo := repository.NewUserRepository(client)
 	tokenRepo := repository.NewTokenRepository(client)
-	authService := service.NewAuthService(*userRepo, tokenRepo, cfg.JWTSecret, time.Hour)
+	authService := service.NewAuthService(userRepo, tokenRepo, cfg.JWTSecret, time.Hour)
 
 	lis, err := net.Listen("tcp", cfg.AuthServiceAddr)
 	if err != nil {
