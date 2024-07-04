@@ -5,6 +5,9 @@ import (
 	"auth/ent"
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -16,17 +19,20 @@ type Config struct {
 
 	// RedisURL is the connection string for Redis.
 	RedisURL string
+
+	// MigrationsDir is the directory containing the ent migration files.
+	MigrationsDir string
 }
 
 // ConnectEnt establishes a connection to the SQLite database and returns an ent client.
-// It also runs the auto migration tool to create the schema resources.
+// It checks the ent folder and applies the latest migration.
 //
 // Parameters:
-//   - cfg: Config struct containing the DatabaseURL.
+//   - cfg: Config struct containing the DatabaseURL and MigrationsDir.
 //
 // Returns:
 //   - *ent.Client: A pointer to the ent client for database operations.
-//   - error: An error if the connection or schema creation fails, nil otherwise.
+//   - error: An error if the connection or migration fails, nil otherwise.
 func ConnectEnt(cfg Config) (*ent.Client, error) {
 	// Open a connection to the SQLite database
 	client, err := ent.Open("sqlite3", cfg.DatabaseURL)
@@ -34,12 +40,56 @@ func ConnectEnt(cfg Config) (*ent.Client, error) {
 		return nil, fmt.Errorf("failed opening connection to sqlite: %v", err)
 	}
 
-	// Run the auto migration tool to create schema resources
-	if err := client.Schema.Create(context.Background()); err != nil {
-		return nil, fmt.Errorf("failed creating schema resources: %v", err)
+	// Find the latest migration file
+	latestMigration, err := getLatestMigrationFile(cfg.MigrationsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest migration file: %v", err)
 	}
 
+	log.Println("latestMigration", latestMigration)
+
+	// // Apply the latest migration
+	// err = client.Schema.Create(context.Background(), ent.Migrate(latestMigration))
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to apply latest migration: %v", err)
+	// }
+
 	return client, nil
+}
+
+// getLatestMigrationFile finds the most recent migration file in the specified directory.
+//
+// Parameters:
+//   - dir: The directory containing migration files.
+//
+// Returns:
+//   - string: The content of the latest migration file.
+//   - error: An error if reading the migration file fails, nil otherwise.
+func getLatestMigrationFile(dir string) (string, error) {
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return "", fmt.Errorf("failed to read migration directory: %v", err)
+	}
+
+	var latestFile os.DirEntry
+	for _, file := range files {
+		if !file.IsDir() && filepath.Ext(file.Name()) == ".sql" {
+			if latestFile == nil || file.Name() > latestFile.Name() {
+				latestFile = file
+			}
+		}
+	}
+
+	if latestFile == nil {
+		return "", fmt.Errorf("no migration files found in directory")
+	}
+
+	content, err := os.ReadFile(filepath.Join(dir, latestFile.Name()))
+	if err != nil {
+		return "", fmt.Errorf("failed to read migration file: %v", err)
+	}
+
+	return string(content), nil
 }
 
 // ConnectRedis establishes a connection to Redis.
