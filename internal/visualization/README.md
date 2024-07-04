@@ -109,20 +109,6 @@ service VisualizationService {
 
 Run tests using:
 
-```
+```bash
 go test ./internal/visualization/...
 ```
-
-Include unit tests for individual components (processors, renderers) and integration tests for the entire visualization pipeline.
-
-## Next Steps
-
-1. Implement basic chart rendering functionality
-2. Integrate with the Data Source module
-3. Develop the API handlers and service layer
-4. Implement data processing and aggregation functions
-5. Add support for different visualization types
-6. Implement theming and customization options
-7. Add export functionality
-8. Optimize performance and implement caching
-9. Develop comprehensive test suite
