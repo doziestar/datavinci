@@ -2,11 +2,11 @@
 package repository
 
 import (
-	"context"
-	"time"
 	"auth/ent"
 	"auth/ent/token"
 	"auth/ent/user"
+	"context"
+	"time"
 )
 
 // ITokenRepository defines the interface for token-related operations.
