@@ -573,3 +573,5 @@ function SettingsIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export default Dashboard;
