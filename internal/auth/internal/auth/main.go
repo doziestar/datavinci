@@ -7,10 +7,12 @@ import (
 
 	"auth/internal/auth/service"
 	"auth/internal/db"
+	"auth/internal/interceptor"
 	"auth/internal/repository"
 	pb "auth/pb"
 	"pkg/config"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -38,7 +40,20 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	grpcServer := grpc.NewServer()
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
+	interceptor := interceptor.NewAuthInterceptor(
+		interceptor.WithLogger(logger),
+		// interceptor.WithTokenValidator(customTokenValidator),
+		interceptor.WithSupportedSchemes(interceptor.JWT, interceptor.APIKey),
+		// interceptor.WithRefreshTokenFunc(customRefreshFunc),
+	)
+
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(interceptor),
+	)
+
 	pb.RegisterAuthServiceServer(grpcServer, authService)
 
 	log.Printf("Starting Auth service on %s", cfg.AuthServiceAddr)
