@@ -30,7 +30,7 @@ func main() {
 
 	roleRepo := repository.NewRoleRepository(client)
 	userRepo := repository.NewUserRepository(client)
-	authzService := service.NewAuthzService(*roleRepo, *userRepo)
+	authzService := service.NewAuthzService(roleRepo, userRepo)
 
 	lis, err := net.Listen("tcp", cfg.AuthzServiceAddr)
 	if err != nil {
