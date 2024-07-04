@@ -165,7 +165,7 @@ export function LandingPage() {
             {features.map((feature, index) => (
               <motion.div
                 key={index}
-                className="glassmorphic p-6 rounded-lg"
+                className="glassmorphic p-6 rounded-lg floating-card glow group"
                 variants={fadeIn}
                 transition={{ duration: 0.5, delay: 0.1 * index }}
               >
@@ -418,7 +418,7 @@ chart.save("sales_forecast.png")`}
               What Developers Are Saying
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <div className="glassmorphic p-6 fallback-bg">
+              <div className="glassmorphic p-6 fallback-bg floating-card glow group">
                 <p className="italic mb-4 text-foreground text-shadow">
                   "DataVinci has revolutionized our data pipeline. It's
                   intuitive, powerful, and saves us countless hours every week."
@@ -427,7 +427,7 @@ chart.save("sales_forecast.png")`}
                   - Sarah Chen, Senior Data Engineer
                 </p>
               </div>
-              <div className="glassmorphic p-6 fallback-bg">
+              <div className="glassmorphic p-6 fallback-bg floating-card glow group">
                 <p className="italic mb-4 text-foreground text-shadow">
                   "The AI-powered insights have given us a competitive edge.
                   It's like having a data scientist on call 24/7."
@@ -436,7 +436,7 @@ chart.save("sales_forecast.png")`}
                   - Alex Rodriguez, CTO
                 </p>
               </div>
-              <div className="glassmorphic p-6 fallback-bg">
+              <div className="glassmorphic p-6 fallback-bg floating-card glow group">
                 <p className="italic mb-4 text-foreground text-shadow">
                   "DataVinci's extensibility is a game-changer. We've integrated
                   it seamlessly with our existing tools and workflows."

@@ -26,12 +26,6 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
-
 @layer base {
   :root {
     --background: 210 100% 6%;
@@ -55,15 +49,15 @@ body {
     --ring: 180 100% 90%;
     --radius: 0rem;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   h1,
   h2,
   h3,
@@ -75,8 +69,39 @@ body {
 }
 
 @layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
   .text-shadow {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .floating-card {
+    @apply transition-all duration-300 ease-out hover:translate-y-[-10px] hover:shadow-lg;
+  }
+
+  .glow {
+    @apply relative overflow-hidden;
+  }
+
+  .glow::before {
+    content: "";
+    @apply absolute top-[-50%] left-[-50%] w-[200%] h-[200%] opacity-0 rotate-[30deg] transition-opacity duration-300;
+    background: linear-gradient(to right, transparent, white, transparent);
+  }
+
+  .glow:hover::before {
+    @apply animate-glow;
+  }
+}
+
+@keyframes glow {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }
 
@@ -85,6 +110,7 @@ body {
     background-color: rgba(17, 24, 39, 0.95);
   }
 }
+
 .glassmorphic {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
