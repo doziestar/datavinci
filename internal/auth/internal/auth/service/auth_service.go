@@ -16,15 +16,119 @@ import (
 	pb "auth/pb"
 )
 
-// IAuthService is the interface for the AuthService service.
+// IAuthService defines the interface for authentication and user management operations.
+// It provides methods for user authentication, token management, and user CRUD operations.
 type IAuthService interface {
+	// Login authenticates a user and returns a login response with tokens.
+	//
+	// Parameters:
+	//   - ctx: A context.Context for handling deadlines, cancellations, and request-scoped values.
+	//   - req: A pointer to pb.LoginRequest containing user credentials and any additional login parameters.
+	//
+	// Returns:
+	//   - *pb.LoginResponse: A response containing authentication tokens (e.g., access token, refresh token) and any additional user information.
+	//   - error: An error if authentication fails, such as invalid credentials, account lockout, or internal server issues.
+	//
+	// The method should implement proper security measures, such as rate limiting and account lockout mechanisms.
+	// It should also log authentication attempts for security auditing purposes.
 	Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error)
+
+	// Logout terminates a user's active session, invalidating their current authentication tokens.
+	//
+	// Parameters:
+	//   - ctx: A context.Context for handling deadlines, cancellations, and request-scoped values.
+	//   - req: A pointer to pb.LogoutRequest containing the user's session information or tokens to be invalidated.
+	//
+	// Returns:
+	//   - *emptypb.Empty: An empty response indicating successful logout.
+	//   - error: An error if the logout process fails, such as invalid session, or internal server issues.
+	//
+	// This method should ensure all related session data is cleared and any distributed caches are updated.
+	// It should also log the logout event for security auditing purposes.
 	Logout(ctx context.Context, req *pb.LogoutRequest) (*emptypb.Empty, error)
+
+	// RefreshToken extends a user's session by providing a new access token.
+	//
+	// Parameters:
+	//   - ctx: A context.Context for handling deadlines, cancellations, and request-scoped values.
+	//   - req: A pointer to pb.RefreshTokenRequest containing the current refresh token.
+	//
+	// Returns:
+	//   - *pb.RefreshTokenResponse: A response containing a new access token and optionally a new refresh token.
+	//   - error: An error if token refresh fails, such as expired refresh token, token reuse, or internal server issues.
+	//
+	// This method should implement proper security checks, including refresh token rotation if applicable.
+	// It should also validate the refresh token's expiration and ensure it hasn't been revoked.
 	RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error)
+
+	// ValidateToken checks the validity and integrity of a given token.
+	//
+	// Parameters:
+	//   - ctx: A context.Context for handling deadlines, cancellations, and request-scoped values.
+	//   - req: A pointer to pb.ValidateTokenRequest containing the token to be validated.
+	//
+	// Returns:
+	//   - *pb.ValidateTokenResponse: A response indicating the token's validity and any associated metadata.
+	//   - error: An error if the validation process fails due to internal server issues.
+	//
+	// This method should check the token's signature, expiration, and ensure it hasn't been revoked.
+	// It may also return additional information about the token, such as associated user ID or permissions.
 	ValidateToken(ctx context.Context, req *pb.ValidateTokenRequest) (*pb.ValidateTokenResponse, error)
+
+	// RegisterUser creates a new user account in the system.
+	//
+	// Parameters:
+	//   - ctx: A context.Context for handling deadlines, cancellations, and request-scoped values.
+	//   - req: A pointer to pb.RegisterUserRequest containing the new user's information.
+	//
+	// Returns:
+	//   - *pb.RegisterUserResponse: A response containing the newly created user's ID and any additional information.
+	//   - error: An error if user registration fails, such as duplicate username/email, invalid data, or internal server issues.
+	//
+	// This method should implement proper data validation, secure password hashing, and any necessary unique constraint checks.
+	// It may also trigger additional processes like sending a verification email or assigning default roles.
 	RegisterUser(ctx context.Context, req *pb.RegisterUserRequest) (*pb.RegisterUserResponse, error)
+
+	// UpdateUser modifies existing user information.
+	//
+	// Parameters:
+	//   - ctx: A context.Context for handling deadlines, cancellations, and request-scoped values.
+	//   - req: A pointer to pb.UpdateUserRequest containing the user ID and fields to be updated.
+	//
+	// Returns:
+	//   - *pb.UpdateUserResponse: A response confirming the update and containing the updated user information.
+	//   - error: An error if the update fails, such as user not found, invalid data, or internal server issues.
+	//
+	// This method should implement proper authorization checks to ensure the requester has permission to update the user.
+	// It should also validate the updated data and handle any unique constraint violations.
 	UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UpdateUserResponse, error)
+
+	// DeleteUser removes a user account from the system.
+	//
+	// Parameters:
+	//   - ctx: A context.Context for handling deadlines, cancellations, and request-scoped values.
+	//   - req: A pointer to pb.DeleteUserRequest containing the ID of the user to be deleted.
+	//
+	// Returns:
+	//   - *emptypb.Empty: An empty response indicating successful deletion.
+	//   - error: An error if the deletion fails, such as user not found, unauthorized deletion, or internal server issues.
+	//
+	// This method should implement proper authorization checks to ensure the requester has permission to delete the user.
+	// It should also handle related data cleanups, such as revoking all active sessions and handling foreign key constraints.
 	DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) (*emptypb.Empty, error)
+
+	// GetUser retrieves user information based on provided criteria.
+	//
+	// Parameters:
+	//   - ctx: A context.Context for handling deadlines, cancellations, and request-scoped values.
+	//   - req: A pointer to pb.GetUserRequest containing search criteria (e.g., user ID, username, email).
+	//
+	// Returns:
+	//   - *pb.GetUserResponse: A response containing the requested user information.
+	//   - error: An error if the retrieval fails, such as user not found, unauthorized access, or internal server issues.
+	//
+	// This method should implement proper authorization checks to ensure the requester has permission to access the user information.
+	// It should also consider privacy settings and may return different levels of detail based on the requester's permissions.
 	GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error)
 }
 
