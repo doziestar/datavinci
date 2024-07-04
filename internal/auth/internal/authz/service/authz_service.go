@@ -16,11 +16,11 @@ import (
 
 type AuthzService struct {
 	pb.UnimplementedAuthorizationServiceServer
-	roleRepo repository.RoleRepository
-	userRepo repository.UserRepository
+	roleRepo repository.IRoleRepository
+	userRepo repository.IUserRepository
 }
 
-func NewAuthzService(roleRepo repository.RoleRepository, userRepo repository.UserRepository) *AuthzService {
+func NewAuthzService(roleRepo repository.IRoleRepository, userRepo repository.IUserRepository) *AuthzService {
 	return &AuthzService{
 		roleRepo: roleRepo,
 		userRepo: userRepo,
