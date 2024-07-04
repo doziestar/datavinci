@@ -80,6 +80,11 @@ body {
   }
 }
 
+@supports not (backdrop-filter: blur(10px)) {
+  .fallback-bg {
+    background-color: rgba(17, 24, 39, 0.95);
+  }
+}
 .glassmorphic {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
