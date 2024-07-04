@@ -16,6 +16,18 @@ import (
 	pb "auth/pb"
 )
 
+// IAuthService is the interface for the AuthService service.
+type IAuthService interface {
+	Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error)
+	Logout(ctx context.Context, req *pb.LogoutRequest) (*emptypb.Empty, error)
+	RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error)
+	ValidateToken(ctx context.Context, req *pb.ValidateTokenRequest) (*pb.ValidateTokenResponse, error)
+	RegisterUser(ctx context.Context, req *pb.RegisterUserRequest) (*pb.RegisterUserResponse, error)
+	UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UpdateUserResponse, error)
+	DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) (*emptypb.Empty, error)
+	GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error)
+}
+
 type AuthService struct {
 	pb.UnimplementedAuthServiceServer
 	userRepo    repository.IUserRepository
