@@ -1,5 +1,7 @@
 # DataVinci
 
+![alt text](68119.png)
+
 DataVinci is a comprehensive data management and visualization tool designed for the developer community. It enables users to visualize data from various sources, generate insights, analyze data with AI models, and receive real-time updates on anomalies.
 
 ## Table of Contents
