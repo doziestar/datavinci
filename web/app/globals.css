@@ -126,3 +126,7 @@ body {
   );
   background-size: 20px 20px;
 }
+
+.perspective-1000 {
+  perspective: 1000px;
+}

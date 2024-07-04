@@ -1,15 +1,9 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ReactNode } from "react";
 import Link from "next/link";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {
   LineChart,
@@ -24,16 +18,13 @@ import {
   Database,
   Terminal,
   Chrome,
-  TrendingUp,
-  Package,
-  Info,
-  ChevronDown,
-  Code,
   Cpu,
-  GitBranch,
   Cloud,
   Share2,
+  Code,
+  GitBranch,
 } from "lucide-react";
+import Dancing3DHeading from "./3d-dancing-header";
 
 const mockData = [
   { name: "Jan", value: 4000 },
@@ -52,7 +43,7 @@ const features = [
       "Connect to various databases, APIs, and data sources effortlessly.",
   },
   {
-    icon: <LineChartIcon className="w-6 h-6" />,
+    icon: <LineChart className="w-6 h-6" />,
     title: "Advanced Visualizations",
     description: "Create stunning, interactive charts and dashboards.",
   },
@@ -80,6 +71,23 @@ const features = [
       "Foster team collaboration with built-in sharing and version control.",
   },
 ];
+
+interface GlowingCardProps {
+  children: ReactNode;
+  className?: string;
+}
+
+const GlowingCard: React.FC<GlowingCardProps> = ({
+  children,
+  className = "",
+}) => (
+  <motion.div
+    className={`glassmorphic p-6 rounded-lg floating-card glow group ${className}`}
+    whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+  >
+    {children}
+  </motion.div>
+);
 
 export function LandingPage() {
   const [isVisible, setIsVisible] = useState(false);
@@ -110,43 +118,34 @@ export function LandingPage() {
           transition={{ duration: 0.5 }}
           style={{ opacity, scale }}
         >
-          <div className="space-y-10 xl:space-y-16">
-            <div className="grid gap-4 md:grid-cols-2 md:gap-16">
-              <div>
-                <motion.h1
-                  className="lg:leading-tighter text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl xl:text-7xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
-                  variants={fadeIn}
+          <div className="grid gap-4 md:grid-cols-2 md:gap-16">
+            <Dancing3DHeading />
+            <div className="flex flex-col items-start space-y-4">
+              <motion.p
+                className="text-muted-foreground md:text-xl"
+                variants={fadeIn}
+              >
+                DataVinci is the ultimate data management and visualization
+                platform for developers. Harness the power of your data with
+                advanced analytics, AI-driven insights, and seamless
+                integration.
+              </motion.p>
+              <motion.div variants={fadeIn} className="flex space-x-4">
+                <Link
+                  href="#"
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                  prefetch={false}
                 >
-                  Empower Your Data with DataVinci
-                </motion.h1>
-              </div>
-              <div className="flex flex-col items-start space-y-4">
-                <motion.p
-                  className="text-muted-foreground md:text-xl"
-                  variants={fadeIn}
+                  Get Started
+                </Link>
+                <Link
+                  href="#"
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-primary px-6 py-2 text-sm font-medium text-primary shadow transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                  prefetch={false}
                 >
-                  DataVinci is the ultimate data management and visualization
-                  platform for developers. Harness the power of your data with
-                  advanced analytics, AI-driven insights, and seamless
-                  integration.
-                </motion.p>
-                <motion.div variants={fadeIn} className="flex space-x-4">
-                  <Link
-                    href="#"
-                    className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                    prefetch={false}
-                  >
-                    Get Started
-                  </Link>
-                  <Link
-                    href="#"
-                    className="inline-flex h-10 items-center justify-center rounded-md border border-primary px-6 py-2 text-sm font-medium text-primary shadow transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                    prefetch={false}
-                  >
-                    View Demo
-                  </Link>
-                </motion.div>
-              </div>
+                  View Demo
+                </Link>
+              </motion.div>
             </div>
           </div>
         </motion.section>
@@ -163,18 +162,19 @@ export function LandingPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                className="glassmorphic p-6 rounded-lg floating-card glow group"
-                variants={fadeIn}
-                transition={{ duration: 0.5, delay: 0.1 * index }}
-              >
+              <GlowingCard key={index}>
                 <div className="flex items-center mb-4">
-                  <div className="mr-4 text-primary">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold">{feature.title}</h3>
+                  <div className="mr-4 text-primary group-hover:text-accent transition-colors duration-300">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold group-hover:text-accent transition-colors duration-300">
+                    {feature.title}
+                  </h3>
                 </div>
-                <p className="text-muted-foreground">{feature.description}</p>
-              </motion.div>
+                <p className="text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+                  {feature.description}
+                </p>
+              </GlowingCard>
             ))}
           </div>
         </motion.section>
@@ -190,36 +190,19 @@ export function LandingPage() {
             Explore DataVinci
           </h2>
           <div className="flex justify-center space-x-4 mb-8">
-            <button
-              onClick={() => setActiveTab("aggregate")}
-              className={`px-4 py-2 rounded-md transition-colors ${
-                activeTab === "aggregate"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary/30 text-secondary-foreground"
-              }`}
-            >
-              Aggregate
-            </button>
-            <button
-              onClick={() => setActiveTab("visualize")}
-              className={`px-4 py-2 rounded-md transition-colors ${
-                activeTab === "visualize"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary/30 text-secondary-foreground"
-              }`}
-            >
-              Visualize
-            </button>
-            <button
-              onClick={() => setActiveTab("analyze")}
-              className={`px-4 py-2 rounded-md transition-colors ${
-                activeTab === "analyze"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary/30 text-secondary-foreground"
-              }`}
-            >
-              Analyze
-            </button>
+            {["aggregate", "visualize", "analyze"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-md transition-colors ${
+                  activeTab === tab
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary/30 text-secondary-foreground"
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
           </div>
 
           <Card className="w-full glassmorphic">
@@ -233,22 +216,17 @@ export function LandingPage() {
                     Connect seamlessly to various data sources:
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Database className="w-6 h-6 text-primary" />
-                      <span>Databases</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Terminal className="w-6 h-6 text-primary" />
-                      <span>APIs</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Chrome className="w-6 h-6 text-primary" />
-                      <span>Web Scraping</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Terminal className="w-6 h-6 text-primary" />
-                      <span>Logs</span>
-                    </div>
+                    {[
+                      { icon: Database, text: "Databases" },
+                      { icon: Terminal, text: "APIs" },
+                      { icon: Chrome, text: "Web Scraping" },
+                      { icon: Terminal, text: "Logs" },
+                    ].map((item, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <item.icon className="w-6 h-6 text-primary" />
+                        <span>{item.text}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -282,10 +260,14 @@ export function LandingPage() {
                     Leverage advanced AI models for data analysis:
                   </p>
                   <ul className="list-disc list-inside space-y-2">
-                    <li>Anomaly detection</li>
-                    <li>Predictive analytics</li>
-                    <li>Natural language processing</li>
-                    <li>Pattern recognition</li>
+                    {[
+                      "Anomaly detection",
+                      "Predictive analytics",
+                      "Natural language processing",
+                      "Pattern recognition",
+                    ].map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
                   </ul>
                 </div>
               )}
@@ -300,7 +282,7 @@ export function LandingPage() {
           variants={fadeIn}
           transition={{ duration: 0.5, delay: 0.6 }}
         >
-          <div className="glassmorphic p-8 rounded-lg">
+          <GlowingCard className="p-8">
             <h2 className="text-3xl font-bold mb-6">
               Built for Developers, by Developers
             </h2>
@@ -337,26 +319,21 @@ chart.save("sales_forecast.png")`}
                   and integrate with your favorite tools.
                 </p>
                 <ul className="space-y-2">
-                  <li className="flex items-center">
-                    <Code className="w-5 h-5 mr-2 text-primary" />
-                    Custom data connectors
-                  </li>
-                  <li className="flex items-center">
-                    <GitBranch className="w-5 h-5 mr-2 text-primary" />
-                    Version control integration
-                  </li>
-                  <li className="flex items-center">
-                    <Cloud className="w-5 h-5 mr-2 text-primary" />
-                    Cloud deployment options
-                  </li>
-                  <li className="flex items-center">
-                    <Share2 className="w-5 h-5 mr-2 text-primary" />
-                    Collaboration features
-                  </li>
+                  {[
+                    { icon: Code, text: "Custom data connectors" },
+                    { icon: GitBranch, text: "Version control integration" },
+                    { icon: Cloud, text: "Cloud deployment options" },
+                    { icon: Share2, text: "Collaboration features" },
+                  ].map((item, index) => (
+                    <li key={index} className="flex items-center">
+                      <item.icon className="w-5 h-5 mr-2 text-primary" />
+                      {item.text}
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
-          </div>
+          </GlowingCard>
         </motion.section>
 
         <motion.section
@@ -370,39 +347,34 @@ chart.save("sales_forecast.png")`}
             Join the DataVinci Community
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="glassmorphic">
-              <CardHeader>
-                <CardTitle>Open Source</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Contribute to DataVinci's core and help shape the future of
-                  data analysis.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="glassmorphic">
-              <CardHeader>
-                <CardTitle>Developer Forum</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Connect with other developers, share insights, and get help
-                  from the community.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="glassmorphic">
-              <CardHeader>
-                <CardTitle>Resources</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Access tutorials, documentation, and best practices to make
-                  the most of DataVinci.
-                </p>
-              </CardContent>
-            </Card>
+            {[
+              {
+                title: "Open Source",
+                content:
+                  "Contribute to DataVinci's core and help shape the future of data analysis.",
+              },
+              {
+                title: "Developer Forum",
+                content:
+                  "Connect with other developers, share insights, and get help from the community.",
+              },
+              {
+                title: "Resources",
+                content:
+                  "Access tutorials, documentation, and best practices to make the most of DataVinci.",
+              },
+            ].map((item, index) => (
+              <GlowingCard key={index}>
+                <CardHeader>
+                  <CardTitle>{item.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+                    {item.content}
+                  </p>
+                </CardContent>
+              </GlowingCard>
+            ))}
           </div>
         </motion.section>
 
@@ -413,40 +385,39 @@ chart.save("sales_forecast.png")`}
           variants={fadeIn}
           transition={{ duration: 0.5, delay: 1 }}
         >
-          <div className="glassmorphic p-8 rounded-lg">
+          <GlowingCard className="p-8">
             <h2 className="text-3xl font-bold mb-8 text-center text-foreground">
               What Developers Are Saying
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <div className="glassmorphic p-6 fallback-bg floating-card glow group">
-                <p className="italic mb-4 text-foreground text-shadow">
-                  "DataVinci has revolutionized our data pipeline. It's
-                  intuitive, powerful, and saves us countless hours every week."
-                </p>
-                <p className="font-semibold text-foreground">
-                  - Sarah Chen, Senior Data Engineer
-                </p>
-              </div>
-              <div className="glassmorphic p-6 fallback-bg floating-card glow group">
-                <p className="italic mb-4 text-foreground text-shadow">
-                  "The AI-powered insights have given us a competitive edge.
-                  It's like having a data scientist on call 24/7."
-                </p>
-                <p className="font-semibold text-foreground">
-                  - Alex Rodriguez, CTO
-                </p>
-              </div>
-              <div className="glassmorphic p-6 fallback-bg floating-card glow group">
-                <p className="italic mb-4 text-foreground text-shadow">
-                  "DataVinci's extensibility is a game-changer. We've integrated
-                  it seamlessly with our existing tools and workflows."
-                </p>
-                <p className="font-semibold text-foreground">
-                  - Jamie Taylor, Lead Developer
-                </p>
-              </div>
+              {[
+                {
+                  content:
+                    "DataVinci has revolutionized our data pipeline. It's intuitive, powerful, and saves us countless hours every week.",
+                  author: "Sarah Chen, Senior Data Engineer",
+                },
+                {
+                  content:
+                    "The AI-powered insights have given us a competitive edge. It's like having a data scientist on call 24/7.",
+                  author: "Alex Rodriguez, CTO",
+                },
+                {
+                  content:
+                    "DataVinci's extensibility is a game-changer. We've integrated it seamlessly with our existing tools and workflows.",
+                  author: "Jamie Taylor, Lead Developer",
+                },
+              ].map((testimonial, index) => (
+                <GlowingCard key={index} className="p-6 fallback-bg">
+                  <p className="italic mb-4 text-foreground text-shadow group-hover:text-accent transition-colors duration-300">
+                    "{testimonial.content}"
+                  </p>
+                  <p className="font-semibold text-foreground group-hover:text-accent transition-colors duration-300">
+                    - {testimonial.author}
+                  </p>
+                </GlowingCard>
+              ))}
             </div>
-          </div>
+          </GlowingCard>
         </motion.section>
 
         <motion.section
@@ -456,11 +427,11 @@ chart.save("sales_forecast.png")`}
           variants={fadeIn}
           transition={{ duration: 0.5, delay: 1.2 }}
         >
-          <div className="glassmorphic p-8 rounded-lg text-center">
+          <GlowingCard className="p-8 text-center">
             <h2 className="text-3xl font-bold mb-6">
               Ready to Transform Your Data?
             </h2>
-            <p className="text-xl text-muted-foreground mb-8">
+            <p className="text-xl text-muted-foreground mb-8 group-hover:text-foreground transition-colors duration-300">
               Join thousands of developers who are already leveraging DataVinci
               to unlock the full potential of their data.
             </p>
@@ -480,161 +451,52 @@ chart.save("sales_forecast.png")`}
                 Schedule a Demo
               </Link>
             </div>
-          </div>
+          </GlowingCard>
         </motion.section>
       </main>
 
       <footer className="w-full py-6 bg-secondary/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Product</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Case Studies
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    API
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Company</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Careers
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Tutorials
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Community
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    GitHub
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Legal</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Terms of Service
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    Cookie Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    GDPR
-                  </Link>
-                </li>
-              </ul>
-            </div>
+            {[
+              {
+                title: "Product",
+                links: ["Features", "Pricing", "Case Studies", "API"],
+              },
+              {
+                title: "Company",
+                links: ["About Us", "Careers", "Blog", "Contact"],
+              },
+              {
+                title: "Resources",
+                links: ["Documentation", "Tutorials", "Community", "GitHub"],
+              },
+              {
+                title: "Legal",
+                links: [
+                  "Privacy Policy",
+                  "Terms of Service",
+                  "Cookie Policy",
+                  "GDPR",
+                ],
+              },
+            ].map((section, index) => (
+              <div key={index}>
+                <h3 className="text-lg font-semibold mb-4">{section.title}</h3>
+                <ul className="space-y-2">
+                  {section.links.map((link, linkIndex) => (
+                    <li key={linkIndex}>
+                      <Link
+                        href="#"
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        {link}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
           <div className="mt-8 pt-8 border-t border-secondary/30 text-center">
             <p className="text-muted-foreground">
@@ -647,191 +509,4 @@ chart.save("sales_forecast.png")`}
   );
 }
 
-function DatabaseIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <ellipse cx="12" cy="5" rx="9" ry="3" />
-      <path d="M3 5V19A9 3 0 0 0 21 19V5" />
-      <path d="M3 12A9 3 0 0 0 21 12" />
-    </svg>
-  );
-}
-
-function InfoIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 16v-4" />
-      <path d="M12 8h.01" />
-    </svg>
-  );
-}
-
-function LineChartIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 3v18h18" />
-      <path d="m19 9-5 5-4-4-3 3" />
-    </svg>
-  );
-}
-
-function PackageIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m7.5 4.27 9 5.15" />
-      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-      <path d="m3.3 7 8.7 5 8.7-5" />
-      <path d="M12 22V12" />
-    </svg>
-  );
-}
-
-function PiIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="9" x2="9" y1="4" y2="20" />
-      <path d="M4 7c0-1.7 1.3-3 3-3h13" />
-      <path d="M18 20c-1.7 0-3-1.3-3-3V4" />
-    </svg>
-  );
-}
-
-function PieChartIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-      <path d="M22 12A10 10 0 0 0 12 2v10z" />
-    </svg>
-  );
-}
-
-function ScatterChartIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
-      <circle cx="18.5" cy="5.5" r=".5" fill="currentColor" />
-      <circle cx="11.5" cy="11.5" r=".5" fill="currentColor" />
-      <circle cx="7.5" cy="16.5" r=".5" fill="currentColor" />
-      <circle cx="17.5" cy="14.5" r=".5" fill="currentColor" />
-      <path d="M3 3v18h18" />
-    </svg>
-  );
-}
-
-function TerminalIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="4 17 10 11 4 5" />
-      <line x1="12" x2="20" y1="19" y2="19" />
-    </svg>
-  );
-}
-
-function TrendingUpIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-      <polyline points="16 7 22 7 22 13" />
-    </svg>
-  );
-}
+export default LandingPage;
