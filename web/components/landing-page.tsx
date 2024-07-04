@@ -418,41 +418,33 @@ chart.save("sales_forecast.png")`}
               What Developers Are Saying
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <Card className="glassmorphic">
-                <CardContent className="pt-6">
-                  <p className="italic mb-4 text-foreground">
-                    "DataVinci has revolutionized our data pipeline. It's
-                    intuitive, powerful, and saves us countless hours every
-                    week."
-                  </p>
-                  <p className="font-semibold text-foreground">
-                    - Sarah Chen, Senior Data Engineer
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="glassmorphic">
-                <CardContent className="pt-6">
-                  <p className="italic mb-4 text-foreground">
-                    "The AI-powered insights have given us a competitive edge.
-                    It's like having a data scientist on call 24/7."
-                  </p>
-                  <p className="font-semibold text-foreground">
-                    - Alex Rodriguez, CTO
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="glassmorphic">
-                <CardContent className="pt-6">
-                  <p className="italic mb-4 text-foreground">
-                    "DataVinci's extensibility is a game-changer. We've
-                    integrated it seamlessly with our existing tools and
-                    workflows."
-                  </p>
-                  <p className="font-semibold text-foreground">
-                    - Jamie Taylor, Lead Developer
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="glassmorphic p-6">
+                <p className="italic mb-4 text-foreground text-shadow">
+                  "DataVinci has revolutionized our data pipeline. It's
+                  intuitive, powerful, and saves us countless hours every week."
+                </p>
+                <p className="font-semibold text-foreground text-shadow">
+                  - Sarah Chen, Senior Data Engineer
+                </p>
+              </div>
+              <div className="glassmorphic p-6">
+                <p className="italic mb-4 text-foreground text-shadow">
+                  "The AI-powered insights have given us a competitive edge.
+                  It's like having a data scientist on call 24/7."
+                </p>
+                <p className="font-semibold text-foreground">
+                  - Alex Rodriguez, CTO
+                </p>
+              </div>
+              <div className="glassmorphic p-6">
+                <p className="italic mb-4 text-foreground">
+                  "DataVinci's extensibility is a game-changer. We've integrated
+                  it seamlessly with our existing tools and workflows."
+                </p>
+                <p className="font-semibold text-foreground">
+                  - Jamie Taylor, Lead Developer
+                </p>
+              </div>
             </div>
           </div>
         </motion.section>
