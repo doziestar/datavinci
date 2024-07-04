@@ -18,13 +18,13 @@ import (
 
 type AuthService struct {
 	pb.UnimplementedAuthServiceServer
-	userRepo    repository.UserRepository
-	tokenRepo   *repository.TokenRepository
+	userRepo    repository.IUserRepository
+	tokenRepo   repository.ITokenRepository
 	jwtSecret   string
 	tokenExpiry time.Duration
 }
 
-func NewAuthService(userRepo repository.UserRepository, tokenRepo *repository.TokenRepository, jwtSecret string, tokenExpiry time.Duration) *AuthService {
+func NewAuthService(userRepo repository.IUserRepository, tokenRepo repository.ITokenRepository, jwtSecret string, tokenExpiry time.Duration) *AuthService {
 	return &AuthService{
 		userRepo:    userRepo,
 		tokenRepo:   tokenRepo,
