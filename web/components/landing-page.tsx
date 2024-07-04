@@ -423,7 +423,7 @@ chart.save("sales_forecast.png")`}
                   "DataVinci has revolutionized our data pipeline. It's
                   intuitive, powerful, and saves us countless hours every week."
                 </p>
-                <p className="font-semibold text-foreground text-shadow">
+                <p className="font-semibold text-foreground">
                   - Sarah Chen, Senior Data Engineer
                 </p>
               </div>
@@ -437,7 +437,7 @@ chart.save("sales_forecast.png")`}
                 </p>
               </div>
               <div className="glassmorphic p-6">
-                <p className="italic mb-4 text-foreground">
+                <p className="italic mb-4 text-foreground text-shadow">
                   "DataVinci's extensibility is a game-changer. We've integrated
                   it seamlessly with our existing tools and workflows."
                 </p>
