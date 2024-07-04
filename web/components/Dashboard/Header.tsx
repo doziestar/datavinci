@@ -80,8 +80,8 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage
-                    src="https://github.com/shadcn.png"
-                    alt="@shadcn"
+                    src="https://avatars.githubusercontent.com/u/39489124?v=4"
+                    alt="@doziestar"
                   />
                   <AvatarFallback>SC</AvatarFallback>
                 </Avatar>
