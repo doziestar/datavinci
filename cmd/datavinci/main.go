@@ -15,7 +15,7 @@ import (
 
 func main() {
 	// Set up a connection to the server.
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -30,7 +30,7 @@ func main() {
 	// Connect to the data source
 	connResp, err := c.Connect(ctx, &pb.ConnectRequest{ConnectorName: "mongo"})
 	if err != nil {
-		log.Fatalf("Could not connect: %v", err)
+		fmt.Printf("Could not connect: %v", err)
 	}
 	log.Printf("Connect Response: %t", connResp.GetSuccess())
 
@@ -54,7 +54,7 @@ func main() {
 		Command:       string(insertQueryJSON),
 	})
 	if err != nil {
-		log.Fatalf("Could not insert data: %v", err)
+		fmt.Printf("Could not insert data: %v", err)
 	}
 	fmt.Println("Inserted test data successfully")
 
@@ -70,7 +70,7 @@ func main() {
 		Query:         string(selectQueryJSON),
 	})
 	if err != nil {
-		log.Fatalf("Could not query data: %v", err)
+		fmt.Printf("Could not query data: %v", err)
 	}
 
 	fmt.Println("Query results:")
@@ -95,7 +95,7 @@ func main() {
 		Command:       string(updateQueryJSON),
 	})
 	if err != nil {
-		log.Fatalf("Could not update data: %v", err)
+		fmt.Printf("Could not update data: %v", err)
 	}
 	fmt.Println("Updated data successfully")
 
@@ -105,7 +105,7 @@ func main() {
 		Query:         string(selectQueryJSON),
 	})
 	if err != nil {
-		log.Fatalf("Could not query updated data: %v", err)
+		fmt.Printf("Could not query updated data: %v", err)
 	}
 	fmt.Println("Updated query results:")
 	for _, row := range queryResp.GetRows() {
@@ -126,7 +126,7 @@ func main() {
 		Command:       string(deleteQueryJSON),
 	})
 	if err != nil {
-		log.Fatalf("Could not delete data: %v", err)
+		fmt.Printf("Could not delete data: %v", err)
 	}
 	fmt.Println("Deleted data successfully")
 
@@ -136,14 +136,14 @@ func main() {
 		Query:         string(selectQueryJSON),
 	})
 	if err != nil {
-		log.Fatalf("Could not query after deletion: %v", err)
+		fmt.Printf("Could not query data after deletion: %v", err)
 	}
 	fmt.Printf("Number of results after deletion: %d\n", len(queryResp.GetRows()))
 
 	// Disconnect from the data source
 	disconnResp, err := c.Disconnect(ctx, &pb.DisconnectRequest{ConnectorName: "example_mongo"})
 	if err != nil {
-		log.Fatalf("Could not disconnect: %v", err)
+		fmt.Printf("Could not disconnect: %v", err)
 	}
 	log.Printf("Disconnect Response: %t", disconnResp.GetSuccess())
 }
