@@ -9,6 +9,7 @@ import (
 	pb "visualization/data/client"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // DataSourceClient is a gRPC client for the DataSource service
@@ -19,7 +20,7 @@ type DataSourceClient struct {
 
 // NewDataSourceClient creates a new DataSourceClient
 func NewDataSourceClient(address string) (*DataSourceClient, error) {
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to DataSource service: %w", err)
 	}

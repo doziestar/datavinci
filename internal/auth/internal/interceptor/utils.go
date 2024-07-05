@@ -100,6 +100,7 @@ func authenticateJWT(ctx context.Context, authToken string, config *AuthIntercep
 		md = md.Copy()
 		md.Set("new-token", newToken)
 		ctx = metadata.NewIncomingContext(ctx, md)
+		fmt.Println("ctx: ", ctx)
 	}
 
 	return claims, nil
@@ -205,8 +206,12 @@ func defaultAPIKeyValidator(apiKey string) (bool, error) {
 // validateAPIKey checks the validity of an API key, using caching for performance.
 func validateAPIKey(apiKey string, config *AuthInterceptorConfig) (bool, error) {
 	// Check cache first
-	if valid, found := config.APIKeyCache.Get(apiKey); found {
-		return valid.(bool), nil
+	if cachedValue, found := config.APIKeyCache.Get(apiKey); found {
+		valid, ok := cachedValue.(bool)
+		if !ok {
+			return false, fmt.Errorf("cached value is not a bool")
+		}
+		return valid, nil
 	}
 
 	// If not in cache, validate using the provided validator
@@ -217,7 +222,6 @@ func validateAPIKey(apiKey string, config *AuthInterceptorConfig) (bool, error) 
 
 	// Cache the result
 	config.APIKeyCache.Set(apiKey, valid, cache.DefaultExpiration)
-
 	return valid, nil
 }
 

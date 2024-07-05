@@ -458,18 +458,6 @@ func TestGetUserClaims(t *testing.T) {
 	})
 }
 
-// mockRateLimiter is a mock implementation of the rate.Limiter interface
-type mockRateLimiter struct {
-	allowRequest bool
-}
-
-func (m *mockRateLimiter) Wait(ctx context.Context) error {
-	if !m.allowRequest {
-		return status.Error(codes.ResourceExhausted, "Rate limit exceeded")
-	}
-	return nil
-}
-
 func TestRefreshTokenIfNeeded(t *testing.T) {
 	t.Run("Token refresh", func(t *testing.T) {
 		config := &AuthInterceptorConfig{
