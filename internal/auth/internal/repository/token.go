@@ -6,6 +6,7 @@ import (
 	"auth/ent/token"
 	"auth/ent/user"
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -114,12 +115,24 @@ func (r *TokenRepository) GetByToken(ctx context.Context, tokenString string) (*
 
 // RevokeToken implements ITokenRepository.RevokeToken.
 func (r *TokenRepository) RevokeToken(ctx context.Context, tokenString string) error {
-	_, err := r.client.Token.
+	affected, err := r.client.Token.
 		Update().
-		Where(token.Token(tokenString)).
+		Where(
+			token.Token(tokenString),
+			token.RevokedEQ(false),
+		).
 		SetRevoked(true).
 		Save(ctx)
-	return err
+
+	if err != nil {
+		return fmt.Errorf("failed to revoke token: %w", err)
+	}
+
+	if affected == 0 {
+		return fmt.Errorf("token not found or already revoked")
+	}
+
+	return nil
 }
 
 // DeleteExpiredTokens implements ITokenRepository.DeleteExpiredTokens.
