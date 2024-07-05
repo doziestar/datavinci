@@ -309,6 +309,7 @@ type IUserRepository interface {
 	//
 	// Parameters:
 	//   - ctx: Context for the database operation.
+	//   - username: String representing the username of the user.
 	//   - password: String representing the password to check.
 	//
 	// Returns:
@@ -322,12 +323,13 @@ type IUserRepository interface {
 	//   } else {
 	//     fmt.Println("Password is incorrect")
 	//   }
-	CheckPassword(ctx context.Context, password string) bool
+	CheckPassword(ctx context.Context, username, password string) bool
 
 	// SetPassword sets a new password for a user.
 	//
 	// Parameters:
 	//   - ctx: Context for the database operation.
+	//   - username: String representing the username of the user.
 	//   - password: String representing the new password to set.
 	//
 	// Returns:
@@ -341,7 +343,7 @@ type IUserRepository interface {
 	//     return
 	//   }
 	//   fmt.Println("New password successfully set")
-	SetPassword(ctx context.Context, password string) error
+	SetPassword(ctx context.Context, username, password string) error
 }
 
 type UserRepository struct {
@@ -465,22 +467,18 @@ func (r *UserRepository) GetUsersByRole(ctx context.Context, roleID string) ([]*
 }
 
 // CheckPassword verifies if the provided password is correct for a user.
-func (r *UserRepository) CheckPassword(ctx context.Context, password string) bool {
-	user, err := r.client.User.Query().Where(user.Password(password)).Only(ctx)
+func (r *UserRepository) CheckPassword(ctx context.Context, username, password string) bool {
+	user, err := r.client.User.Query().Where(user.Username(username)).Only(ctx)
 	if err != nil {
 		return false
 	}
-
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // SetPassword sets a new password for a user.
-func (r *UserRepository) SetPassword(ctx context.Context, password string) error {
-	user, err := r.client.User.Query().Where(user.Password(password)).Only(ctx)
+func (r *UserRepository) SetPassword(ctx context.Context, username, password string) error {
+	user, err := r.client.User.Query().Where(user.Username(username)).Only(ctx)
 	if err != nil {
 		return err
 	}
