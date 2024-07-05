@@ -25,7 +25,7 @@ type userTestSuite struct {
 func setupUserTestSuite(t *testing.T) *userTestSuite {
 	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
 	require.NotNil(t, client, "Ent client should not be nil")
-	
+
 	return &userTestSuite{
 		client: client,
 		repo:   repository.NewUserRepository(client),
@@ -93,7 +93,6 @@ func (s *userTestSuite) testCreate(t *testing.T) {
 	require.NoError(t, err, "Failed to retrieve saved user")
 	assert.Equal(t, newUser.Username, savedUser.Username, "Saved username mismatch")
 }
-
 
 func (s *userTestSuite) testGetByID(t *testing.T) {
 	ctx := context.Background()
@@ -260,7 +259,7 @@ func (s *userTestSuite) testCheckPassword(t *testing.T) {
 	ctx := context.Background()
 	password := s.faker.Password(true, true, true, true, false, 32)
 	username := s.faker.Username()
-	
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	require.NoError(t, err, "Failed to hash password")
 
@@ -286,8 +285,6 @@ func (s *userTestSuite) testSetPassword(t *testing.T) {
 	user := s.createUser(t)
 	oldPassword := user.Password
 	newPassword := s.faker.Password(true, true, true, true, false, 32)
-
-
 
 	err := s.repo.SetPassword(ctx, user.Username, newPassword)
 	require.NoError(t, err, "Failed to set new password")
