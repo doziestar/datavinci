@@ -20,16 +20,21 @@ jobs:
       - name: Verify workspace
         run: go work sync
 
-      - name: Run go fmt
+      - name: Check formatting
         run: |
           all_formatted=true
           for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+            echo "Checking formatting in $dir"
             if [ -n "$(gofmt -s -l $dir)" ]; then
-              echo "Formatting issues in $dir"
+              echo "Formatting issues in $dir:"
+              gofmt -s -l $dir
               all_formatted=false
+            else
+              echo "No formatting issues in $dir"
             fi
           done
           if [ "$all_formatted" = false ]; then
+            echo "Formatting errors found. Please run 'go fmt ./...' in each module to fix."
             exit 1
           fi
 
