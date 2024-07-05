@@ -113,7 +113,7 @@ func (c *RedisTransactionConnector) Query(ctx context.Context, query string, arg
 		return nil, nil // Key does not exist
 	} else if err != nil {
 		return nil, errors.NewError(errors.ErrorTypeTransaction, "cannot query in Redis transaction, use Execute instead", nil)
-	} 
+	}
 
 	return []map[string]interface{}{{"value": val}}, nil
 }

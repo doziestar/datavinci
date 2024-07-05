@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"google.golang.org/grpc"
-	pb "visualization/data/client"
 	"datasource/managers/query"
+	pb "visualization/data/client"
+
+	"google.golang.org/grpc"
 )
 
 // DataSourceClient is a gRPC client for the DataSource service

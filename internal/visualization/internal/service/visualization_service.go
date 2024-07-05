@@ -166,7 +166,6 @@ type VisualizationStore interface {
 	List(ctx context.Context, page, pageSize int32) ([]*pb.VisualizationResponse, int32, error)
 }
 
-
 // VisualizationService implements the VisualizationService gRPC service.
 type VisualizationService struct {
 	pb.UnimplementedVisualizationServiceServer

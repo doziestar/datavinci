@@ -187,9 +187,9 @@ func (spr *ScatterPlotRenderer) Render(data map[string]interface{}) (string, err
 	scatterData := make([]opts.ScatterData, 0, len(chartData))
 	for _, dataPoint := range chartData {
 		scatterData = append(scatterData, opts.ScatterData{
-			Value:        []interface{}{dataPoint[xMeasure], dataPoint[yMeasure]},
-			Symbol:       "circle",
-			SymbolSize:   10,
+			Value:      []interface{}{dataPoint[xMeasure], dataPoint[yMeasure]},
+			Symbol:     "circle",
+			SymbolSize: 10,
 			// ItemStyle:    &opts.ItemStyle{Color: "blue"},
 			SymbolRotate: 0,
 		})

@@ -216,10 +216,95 @@ helm install datavinci deployments/helm
 
 Contributions are welcome! Please read the [contributing guidelines](CONTRIBUTING.md) before submitting a pull request.
 
+## Pre-commit Hooks
+
+We use pre-commit hooks to ensure code quality and consistency. These hooks run automatically before each commit, checking your changes against our coding standards and running various linters.
+
+### Setup
+
+1. Install pre-commit:
+
+   ```bash
+   pip install pre-commit
+   ```
+
+2. Install the git hook scripts:
+   ```bash
+   pre-commit install
+   ```
+
+### Running pre-commit
+
+The hooks will run automatically on `git commit`. If you want to run the hooks manually (for example, to test them or run them on all files), you can use:
+
+```bash
+pre-commit run --all-files
+```
+
+### Our pre-commit hooks
+
+We use the following hooks:
+
+- **For Go:**
+
+  - `go-fmt`: Formats Go code
+  - `go-vet`: Reports suspicious constructs
+  - `go-imports`: Updates import lines
+  - `go-cyclo`: Checks function complexity
+  - `golangci-lint`: Runs multiple Go linters
+  - `go-critic`: Provides extensive code analysis
+  - `go-unit-tests`: Runs Go unit tests
+  - `go-build`: Checks if the code builds
+  - `go-mod-tidy`: Runs `go mod tidy`
+
+- ** ensure that you have the following tools installed:**
+
+  - `golangci-lint`
+  - `go-critic`
+  - `go-cyclo`
+  - `go-unit-tests`
+  - `go-build`
+  - `go-mod-tidy`
+
+    ```bash
+    go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    go install github.com/go-critic/go-critic/cmd/gocritic@latest
+    go install github.com/hexdigest/gounit/cmd/gounit@latest
+    go install github.com/securego/gosec/v2/cmd/gosec@latest
+    ```
+
+- **For TypeScript/JavaScript:**
+
+  - `prettier`: Formats code
+  - `eslint`: Lints JavaScript and TypeScript code
+
+- **General:**
+  - `trailing-whitespace`: Trims trailing whitespace
+  - `end-of-file-fixer`: Ensures files end with a newline
+  - `check-yaml`: Checks yaml files for parseable syntax
+  - `check-added-large-files`: Prevents giant files from being committed
+
+### Skipping hooks
+
+If you need to bypass the pre-commit hooks (not recommended), you can use:
+
+```bash
+git commit -m "Your commit message" --no-verify
+```
+
+However, please use this sparingly and ensure your code still meets our standards.
+
+### Updating hooks
+
+To update the pre-commit hooks to the latest versions, run:
+
+```bash
+pre-commit autoupdate
+```
+
+Then commit the changes to `.pre-commit-config.yaml`.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-```
-
-```

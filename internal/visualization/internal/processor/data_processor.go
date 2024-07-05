@@ -1,4 +1,3 @@
-
 package processor
 
 import (
@@ -6,9 +5,9 @@ import (
 	"fmt"
 	"sort"
 
+	"datasource/managers/query"
 	pb "visualization/api/proto"
 	client "visualization/data"
-	"datasource/managers/query"
 )
 
 // DataProcessor handles the processing of data for visualizations.

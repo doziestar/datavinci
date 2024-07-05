@@ -121,7 +121,7 @@ func (c *SQLConnector) Query(ctx context.Context, query string, args ...interfac
 // Execute executes a command (e.g., INSERT, UPDATE, DELETE) and returns the number of affected rows.
 func (c *SQLConnector) Execute(ctx context.Context, command string, args ...interface{}) (int64, error) {
 	if c.db == nil {
-		return 0, errors.NewError(errors.ErrorTypeDatabaseConnection,errors.ErrorMessages[errors.ErrorTypeDatabaseConnection], nil)
+		return 0, errors.NewError(errors.ErrorTypeDatabaseConnection, errors.ErrorMessages[errors.ErrorTypeDatabaseConnection], nil)
 	}
 
 	result, err := c.db.ExecContext(ctx, command, args...)
@@ -172,7 +172,6 @@ func (c *SQLTransactionConnector) Query(ctx context.Context, query string, args 
 	}
 	defer rows.Close()
 
-	
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, errors.NewError(errors.ErrorTypeQuery, "failed to get columns in transaction", err)

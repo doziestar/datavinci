@@ -14,22 +14,22 @@ type ErrorType uint
 
 // ErrorMessages maps error types to human-readable messages.
 var ErrorMessages = map[ErrorType]string{
-	ErrorTypeUnknown:    "unknown",
+	ErrorTypeUnknown:            "unknown",
 	ErrorTypeDatabaseConnection: "database connection not established",
-	ErrorTypeTimeout:    "timeout",
-	ErrorTypePermission: "permission",
-	ErrorTypeQuery:      "query",
-	ErrorTypeExecution:  "execution",
-	ErrorTypeTransaction: "transaction",
-	ErrorTypeConfiguration: "configuration",
-	ErrorTypeApiConnection: "api connection",
-	ErrorTypeUnsupported: "unsupported",
-	ErrorTypeFileConnection: "file connection",
-	ErrorTypeNotFound:   "not found",
-	ErrorTypeConnection : "connection",
-	ErrorTypeTransformation: "transformation",
-	ErrorTypeEmptyPassword: "empty password",
-	ErrorTypeInvalidCost: "invalid bcrypt cost",
+	ErrorTypeTimeout:            "timeout",
+	ErrorTypePermission:         "permission",
+	ErrorTypeQuery:              "query",
+	ErrorTypeExecution:          "execution",
+	ErrorTypeTransaction:        "transaction",
+	ErrorTypeConfiguration:      "configuration",
+	ErrorTypeApiConnection:      "api connection",
+	ErrorTypeUnsupported:        "unsupported",
+	ErrorTypeFileConnection:     "file connection",
+	ErrorTypeNotFound:           "not found",
+	ErrorTypeConnection:         "connection",
+	ErrorTypeTransformation:     "transformation",
+	ErrorTypeEmptyPassword:      "empty password",
+	ErrorTypeInvalidCost:        "invalid bcrypt cost",
 }
 
 const (

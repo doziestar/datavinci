@@ -5,6 +5,7 @@ package enttest
 import (
 	"auth/ent"
 	"context"
+
 	// required by schema hooks.
 	_ "auth/ent/runtime"
 

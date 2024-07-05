@@ -9,10 +9,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"datasource/grpc"
-	"datasource/managers"
-	"datasource/managers/query"
 	"datasource/connectors"
+	"datasource/grpc"
+	manager "datasource/managers"
+	"datasource/managers/query"
 )
 
 type DataSourceServer struct {
@@ -26,7 +26,7 @@ func NewDataSourceServer(manager *manager.ConnectorManager) *DataSourceServer {
 
 func (s *DataSourceServer) Connect(ctx context.Context, req *grpc.ConnectRequest) (*grpc.ConnectResponse, error) {
 	log.Printf("Received Connect request for connector: %s", req.ConnectorName)
-	
+
 	connector, err := s.manager.GetConnector(req.ConnectorName)
 	if err != nil {
 		log.Printf("Error getting connector %s: %v", req.ConnectorName, err)
@@ -45,7 +45,7 @@ func (s *DataSourceServer) Connect(ctx context.Context, req *grpc.ConnectRequest
 
 func (s *DataSourceServer) Disconnect(ctx context.Context, req *grpc.DisconnectRequest) (*grpc.DisconnectResponse, error) {
 	log.Printf("Received Disconnect request for connector: %s", req.ConnectorName)
-	
+
 	connector, err := s.manager.GetConnector(req.ConnectorName)
 	if err != nil {
 		log.Printf("Error getting connector %s: %v", req.ConnectorName, err)
@@ -64,7 +64,7 @@ func (s *DataSourceServer) Disconnect(ctx context.Context, req *grpc.DisconnectR
 
 func (s *DataSourceServer) ExecuteQuery(ctx context.Context, req *grpc.QueryRequest) (*grpc.QueryResponse, error) {
 	log.Printf("Received ExecuteQuery request for connector: %s", req.ConnectorName)
-	
+
 	connector, err := s.manager.GetConnector(req.ConnectorName)
 	if err != nil {
 		log.Printf("Error getting connector %s: %v", req.ConnectorName, err)
@@ -72,7 +72,7 @@ func (s *DataSourceServer) ExecuteQuery(ctx context.Context, req *grpc.QueryRequ
 	}
 
 	executor := query.NewQueryExecutor(connector)
-	
+
 	var q query.Query
 	err = json.Unmarshal([]byte(req.Query), &q)
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *DataSourceServer) ExecuteQuery(ctx context.Context, req *grpc.QueryRequ
 
 func (s *DataSourceServer) ExecuteCommand(ctx context.Context, req *grpc.CommandRequest) (*grpc.CommandResponse, error) {
 	log.Printf("Received ExecuteCommand request for connector: %s", req.ConnectorName)
-	
+
 	connector, err := s.manager.GetConnector(req.ConnectorName)
 	if err != nil {
 		log.Printf("Error getting connector %s: %v", req.ConnectorName, err)
@@ -121,7 +121,7 @@ func (s *DataSourceServer) ExecuteCommand(ctx context.Context, req *grpc.Command
 
 // func (s *DataSourceServer) GetConnectors(ctx context.Context, req *grpc.GetConnectorsRequest) (*grpc.GetConnectorsResponse, error) {
 // 	log.Printf("Received GetConnectors request")
-	
+
 // 	connectorNames, err := s.manager.GetConnector()
 // 	log.Printf("Retrieved %d connectors", len(connectorNames))
 // 	return &grpc.GetConnectorsResponse{ConnectorNames: connectorNames}, nil
@@ -129,7 +129,7 @@ func (s *DataSourceServer) ExecuteCommand(ctx context.Context, req *grpc.Command
 
 func (s *DataSourceServer) AddConnector(ctx context.Context, req *grpc.AddConnectorRequest) (*grpc.AddConnectorResponse, error) {
 	log.Printf("Received AddConnector request for connector: %s", req.Name)
-	
+
 	config := &connectors.Config{
 		Type:     req.Config.Type,
 		Host:     req.Config.Host,
@@ -158,7 +158,7 @@ func (s *DataSourceServer) AddConnector(ctx context.Context, req *grpc.AddConnec
 
 func (s *DataSourceServer) RemoveConnector(ctx context.Context, req *grpc.RemoveConnectorRequest) (*grpc.RemoveConnectorResponse, error) {
 	log.Printf("Received RemoveConnector request for connector: %s", req.Name)
-	
+
 	err := s.manager.RemoveConnector(req.Name)
 	if err != nil {
 		log.Printf("Error removing connector %s: %v", req.Name, err)

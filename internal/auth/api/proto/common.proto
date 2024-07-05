@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package datavinci.auth;
 
-option go_package = "datavinci/internal/auth/grpc"; 
+option go_package = "datavinci/internal/auth/grpc";
 
 import "google/protobuf/timestamp.proto";
 
