@@ -32,7 +32,7 @@ func TestUserSchema(t *testing.T) {
 		assert.NotEmpty(t, u.ID)
 		assert.Equal(t, "testuser", u.Username)
 		assert.Equal(t, "test@example.com", u.Email)
-		assert.NotEqual(t, "password123", u.Password) 
+		assert.NotEqual(t, "password123", u.Password)
 		assert.WithinDuration(t, time.Now(), u.CreatedAt, time.Second)
 		assert.WithinDuration(t, time.Now(), u.UpdatedAt, time.Second)
 	})
@@ -68,7 +68,7 @@ func TestUserSchema(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.NotEqual(t, "mypassword", u.Password)
-		
+
 		// Verify that the hashed password is correct
 		hasher := pkg.NewPasswordHasher(12)
 		verified, err := hasher.VerifyPassword(u.Password, "mypassword")
@@ -179,7 +179,7 @@ func TestTokenSchema(t *testing.T) {
 			SetType("refresh").
 			SetExpiresAt(time.Now().Add(24 * time.Hour)).
 			SetUser(u).
-			Save(ctx) 
+			Save(ctx)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "token")
