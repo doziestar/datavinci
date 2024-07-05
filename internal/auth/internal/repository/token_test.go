@@ -25,7 +25,7 @@ type tokenTestSuite struct {
 func setupTokenTestSuite(t *testing.T) *tokenTestSuite {
 	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
 	require.NotNil(t, client, "Ent client should not be nil")
-	
+
 	return &tokenTestSuite{
 		client: client,
 		repo:   repository.NewTokenRepository(client),
@@ -40,7 +40,7 @@ func (s *tokenTestSuite) createUser(t *testing.T) *ent.User {
 		SetUsername(s.faker.Username()).
 		SetPassword(s.faker.Password(true, true, true, true, false, 32)).
 		Save(context.Background())
-	
+
 	require.NoError(t, err, "Failed to create user")
 	return user
 }
