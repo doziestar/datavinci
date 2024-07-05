@@ -89,6 +89,16 @@ func (e *Error) Unwrap() error {
 	return e.Err
 }
 
+// Is checks if the given error is of the given type.
+// It allows Error to work with errors.Is and errors.As.
+func (e *Error) Is(target error) bool {
+	t, ok := target.(*Error)
+	if !ok {
+		return false
+	}
+	return e.Type == t.Type
+}
+
 // NewError creates a new Error with the given type, message, and underlying error.
 func NewError(errType ErrorType, message string, err error) *Error {
 	return &Error{
