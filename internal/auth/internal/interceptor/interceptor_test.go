@@ -23,6 +23,30 @@ import (
 	"auth/internal/interceptor"
 )
 
+func TestAuthInterceptorMissingConfig(t *testing.T) {
+	// Create the interceptor with minimal configuration
+	newInterceptor := interceptor.NewAuthInterceptor()
+
+	// Create a mock gRPC handler
+	mockHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return "success", nil
+	}
+
+	// Create context with metadata
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
+		"authorization": "Bearer invalid-token",
+	}))
+
+	// Call the interceptor
+	_, err := newInterceptor(ctx, nil, &grpc.UnaryServerInfo{FullMethod: "/test.Service/TestMethod"}, mockHandler)
+
+	// Check the result
+	assert.Error(t, err, "Expected an error for invalid token")
+	statusErr, ok := status.FromError(err)
+	assert.True(t, ok, "Error should be a gRPC status error")
+	assert.Equal(t, codes.Unauthenticated, statusErr.Code(), "Error code should be Unauthenticated")
+}
+
 func TestAuthInterceptor(t *testing.T) {
 	// Setup
 	logger := zaptest.NewLogger(t)
