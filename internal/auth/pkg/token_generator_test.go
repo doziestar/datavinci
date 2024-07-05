@@ -26,7 +26,7 @@ func TestTokenGenerator(t *testing.T) {
 
 		t.Run("BasicToken", func(t *testing.T) {
 			claims := jwt.MapClaims{
-				"sub": "1234567890",
+				"sub":  "1234567890",
 				"name": "John Doe",
 			}
 

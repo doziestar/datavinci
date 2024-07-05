@@ -246,67 +246,67 @@ func TestAuthenticateAPIKey(t *testing.T) {
 }
 
 func TestLogAuthenticatedRequest(t *testing.T) {
-    // Create a buffer to capture log output
-    var buf bytes.Buffer
-    
-    // Create a logger that writes to the buffer
-    logger := zap.New(zapcore.NewCore(
-        zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-        zapcore.AddSync(&buf),
-        zapcore.InfoLevel,
-    ))
+	// Create a buffer to capture log output
+	var buf bytes.Buffer
 
-    config := &AuthInterceptorConfig{
-        Logger: logger,
-    }
-    ctx := context.Background()
-    info := &grpc.UnaryServerInfo{FullMethod: "/test.Service/Method"}
-    claims := jwt.MapClaims{"sub": "user123"}
-    
-    // Call the function
-    logAuthenticatedRequest(ctx, info, config, claims)
+	// Create a logger that writes to the buffer
+	logger := zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		zapcore.AddSync(&buf),
+		zapcore.InfoLevel,
+	))
 
-    // Check if the log contains expected information
-    logContent := buf.String()
-    assert.Contains(t, logContent, "Authenticated request")
-    assert.Contains(t, logContent, "/test.Service/Method")
-    assert.Contains(t, logContent, "user123")
+	config := &AuthInterceptorConfig{
+		Logger: logger,
+	}
+	ctx := context.Background()
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.Service/Method"}
+	claims := jwt.MapClaims{"sub": "user123"}
+
+	// Call the function
+	logAuthenticatedRequest(ctx, info, config, claims)
+
+	// Check if the log contains expected information
+	logContent := buf.String()
+	assert.Contains(t, logContent, "Authenticated request")
+	assert.Contains(t, logContent, "/test.Service/Method")
+	assert.Contains(t, logContent, "user123")
 }
 
 func TestDefaultTokenValidator(t *testing.T) {
-    secretKey := "my-secret"
+	secretKey := "my-secret"
 
-    t.Run("Valid token", func(t *testing.T) {
-        claims := jwt.MapClaims{
-            "sub": gofakeit.UUID(),
-            "exp": time.Now().Add(time.Hour).Unix(),
-        }
-        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-        tokenString, err := token.SignedString([]byte(secretKey))
-        require.NoError(t, err)
+	t.Run("Valid token", func(t *testing.T) {
+		claims := jwt.MapClaims{
+			"sub": gofakeit.UUID(),
+			"exp": time.Now().Add(time.Hour).Unix(),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString([]byte(secretKey))
+		require.NoError(t, err)
 
-        validatedClaims, err := defaultTokenValidator(tokenString)
-        assert.NoError(t, err)
-        assert.Equal(t, claims["sub"], validatedClaims["sub"])
-    })
+		validatedClaims, err := defaultTokenValidator(tokenString)
+		assert.NoError(t, err)
+		assert.Equal(t, claims["sub"], validatedClaims["sub"])
+	})
 
-    t.Run("Invalid token", func(t *testing.T) {
-        _, err := defaultTokenValidator("invalid.token.string")
-        assert.Error(t, err)
-    })
+	t.Run("Invalid token", func(t *testing.T) {
+		_, err := defaultTokenValidator("invalid.token.string")
+		assert.Error(t, err)
+	})
 
-    t.Run("Expired token", func(t *testing.T) {
-        claims := jwt.MapClaims{
-            "sub": gofakeit.UUID(),
-            "exp": time.Now().Add(-time.Hour).Unix(), // Expired
-        }
-        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-        tokenString, err := token.SignedString([]byte(secretKey))
-        require.NoError(t, err)
+	t.Run("Expired token", func(t *testing.T) {
+		claims := jwt.MapClaims{
+			"sub": gofakeit.UUID(),
+			"exp": time.Now().Add(-time.Hour).Unix(), // Expired
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString([]byte(secretKey))
+		require.NoError(t, err)
 
-        _, err = defaultTokenValidator(tokenString)
-        assert.Error(t, err)
-    })
+		_, err = defaultTokenValidator(tokenString)
+		assert.Error(t, err)
+	})
 }
 
 func TestDefaultAPIKeyValidator(t *testing.T) {
@@ -470,67 +470,66 @@ func (m *mockRateLimiter) Wait(ctx context.Context) error {
 	return nil
 }
 
-
 func TestRefreshTokenIfNeeded(t *testing.T) {
-    t.Run("Token refresh", func(t *testing.T) {
-        config := &AuthInterceptorConfig{
-            Logger: zap.NewNop(),
-            TokenValidator: func(token string) (jwt.MapClaims, error) {
-                return jwt.MapClaims{"sub": "user123", "exp": float64(time.Now().Add(5 * time.Minute).Unix())}, nil
-            },
-            TokenRefreshWindow: 10 * time.Minute,
-            RefreshTokenFunc: func(token string) (string, error) {
-                return "newtoken", nil
-            },
-        }
-        ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{})
-        claims, err := authenticateJWT(ctx, "validtoken", config)
-        assert.NoError(t, err)
-        assert.NotNil(t, claims)
-        _, ok := metadata.FromIncomingContext(ctx)
-        assert.True(t, ok)
-        // assert.Equal(t, []string{"newtoken"}, md.Get("new-token"))
-    })
+	t.Run("Token refresh", func(t *testing.T) {
+		config := &AuthInterceptorConfig{
+			Logger: zap.NewNop(),
+			TokenValidator: func(token string) (jwt.MapClaims, error) {
+				return jwt.MapClaims{"sub": "user123", "exp": float64(time.Now().Add(5 * time.Minute).Unix())}, nil
+			},
+			TokenRefreshWindow: 10 * time.Minute,
+			RefreshTokenFunc: func(token string) (string, error) {
+				return "newtoken", nil
+			},
+		}
+		ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{})
+		claims, err := authenticateJWT(ctx, "validtoken", config)
+		assert.NoError(t, err)
+		assert.NotNil(t, claims)
+		_, ok := metadata.FromIncomingContext(ctx)
+		assert.True(t, ok)
+		// assert.Equal(t, []string{"newtoken"}, md.Get("new-token"))
+	})
 
-    t.Run("Token doesn't need refresh", func(t *testing.T) {
-        config := &AuthInterceptorConfig{
-            Logger: zap.NewNop(),
-            TokenValidator: func(token string) (jwt.MapClaims, error) {
-                return jwt.MapClaims{"sub": "user123", "exp": float64(time.Now().Add(30 * time.Minute).Unix())}, nil
-            },
-            TokenRefreshWindow: 10 * time.Minute,
-            RefreshTokenFunc: func(token string) (string, error) {
-                return "newtoken", nil
-            },
-        }
-        ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{})
-        claims, err := authenticateJWT(ctx, "validtoken", config)
-        assert.NoError(t, err)
-        assert.NotNil(t, claims)
-        md, ok := metadata.FromIncomingContext(ctx)
-        assert.True(t, ok)
-        assert.Empty(t, md.Get("new-token"))
-    })
+	t.Run("Token doesn't need refresh", func(t *testing.T) {
+		config := &AuthInterceptorConfig{
+			Logger: zap.NewNop(),
+			TokenValidator: func(token string) (jwt.MapClaims, error) {
+				return jwt.MapClaims{"sub": "user123", "exp": float64(time.Now().Add(30 * time.Minute).Unix())}, nil
+			},
+			TokenRefreshWindow: 10 * time.Minute,
+			RefreshTokenFunc: func(token string) (string, error) {
+				return "newtoken", nil
+			},
+		}
+		ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{})
+		claims, err := authenticateJWT(ctx, "validtoken", config)
+		assert.NoError(t, err)
+		assert.NotNil(t, claims)
+		md, ok := metadata.FromIncomingContext(ctx)
+		assert.True(t, ok)
+		assert.Empty(t, md.Get("new-token"))
+	})
 
-    t.Run("Refresh function error", func(t *testing.T) {
-        config := &AuthInterceptorConfig{
-            Logger: zap.NewNop(),
-            TokenValidator: func(token string) (jwt.MapClaims, error) {
-                return jwt.MapClaims{"sub": "user123", "exp": float64(time.Now().Add(5 * time.Minute).Unix())}, nil
-            },
-            TokenRefreshWindow: 10 * time.Minute,
-            RefreshTokenFunc: func(token string) (string, error) {
-                return "", fmt.Errorf("refresh token error")
-            },
-        }
-        ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{})
-        claims, err := authenticateJWT(ctx, "validtoken", config)
-        assert.NoError(t, err)
-        assert.NotNil(t, claims)
-        md, ok := metadata.FromIncomingContext(ctx)
-        assert.True(t, ok)
-        assert.Empty(t, md.Get("new-token"))
-    })
+	t.Run("Refresh function error", func(t *testing.T) {
+		config := &AuthInterceptorConfig{
+			Logger: zap.NewNop(),
+			TokenValidator: func(token string) (jwt.MapClaims, error) {
+				return jwt.MapClaims{"sub": "user123", "exp": float64(time.Now().Add(5 * time.Minute).Unix())}, nil
+			},
+			TokenRefreshWindow: 10 * time.Minute,
+			RefreshTokenFunc: func(token string) (string, error) {
+				return "", fmt.Errorf("refresh token error")
+			},
+		}
+		ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{})
+		claims, err := authenticateJWT(ctx, "validtoken", config)
+		assert.NoError(t, err)
+		assert.NotNil(t, claims)
+		md, ok := metadata.FromIncomingContext(ctx)
+		assert.True(t, ok)
+		assert.Empty(t, md.Get("new-token"))
+	})
 }
 
 // Run all tests

@@ -24,13 +24,13 @@ func NewTokenGenerator(secretKey []byte, issuer string, duration time.Duration) 
 
 // GenerateToken generates a new JWT token with the given claims.
 func (g *TokenGenerator) GenerateToken(claims jwt.MapClaims) (string, error) {
-    if claims == nil {
-        claims = jwt.MapClaims{}
-    }
-    now := time.Now()
-    claims["iss"] = g.issuer
-    claims["iat"] = now.Unix()
-    claims["exp"] = now.Add(g.duration).Unix()
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    return token.SignedString(g.secretKey)
+	if claims == nil {
+		claims = jwt.MapClaims{}
+	}
+	now := time.Now()
+	claims["iss"] = g.issuer
+	claims["iat"] = now.Unix()
+	claims["exp"] = now.Add(g.duration).Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(g.secretKey)
 }

@@ -12,10 +12,10 @@ import (
 // It uses a map to store rate limiters for each IP address.
 // The rate limiter is created on the first request from an IP address.
 type PerIPRateLimiter struct {
-    ips map[string]*rate.Limiter
-    mu  *sync.RWMutex
-    r   rate.Limit
-    b   int
+	ips map[string]*rate.Limiter
+	mu  *sync.RWMutex
+	r   rate.Limit
+	b   int
 }
 
 // NewPerIPRateLimiter creates a new PerIPRateLimiter.
@@ -29,13 +29,13 @@ type PerIPRateLimiter struct {
 //
 //	limiter := NewPerIPRateLimiter(10, 5)
 func NewPerIPRateLimiter(r rate.Limit, b int) *PerIPRateLimiter {
-    rand.New(rand.NewSource(time.Now().UnixNano()))
-    return &PerIPRateLimiter{
-        ips: make(map[string]*rate.Limiter),
-        mu:  &sync.RWMutex{},
-        r:   r,
-        b:   b,
-    }
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+	return &PerIPRateLimiter{
+		ips: make(map[string]*rate.Limiter),
+		mu:  &sync.RWMutex{},
+		r:   r,
+		b:   b,
+	}
 }
 
 // AddIP adds an IP address to the rate limiter.
@@ -51,18 +51,18 @@ func NewPerIPRateLimiter(r rate.Limit, b int) *PerIPRateLimiter {
 //
 //	limiter.AddIP("126.0.0.1")
 func (l *PerIPRateLimiter) AddIP(ip string) *rate.Limiter {
-    l.mu.Lock()
-    defer l.mu.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
-    limiter, exists := l.ips[ip]
-    if !exists {
-        // Add a small random variation to the rate
-        adjustedRate := l.r + rate.Limit(rand.Float64()*0.1*float64(l.r))
-        limiter = rate.NewLimiter(adjustedRate, l.b)
-        l.ips[ip] = limiter
-    }
+	limiter, exists := l.ips[ip]
+	if !exists {
+		// Add a small random variation to the rate
+		adjustedRate := l.r + rate.Limit(rand.Float64()*0.1*float64(l.r))
+		limiter = rate.NewLimiter(adjustedRate, l.b)
+		l.ips[ip] = limiter
+	}
 
-    return limiter
+	return limiter
 }
 
 // GetLimiter returns the rate limiter for the given IP address.
@@ -77,13 +77,13 @@ func (l *PerIPRateLimiter) AddIP(ip string) *rate.Limiter {
 //
 //	limiter.GetLimiter("126.0.0.1")
 func (l *PerIPRateLimiter) GetLimiter(ip string) *rate.Limiter {
-    l.mu.RLock()
-    limiter, exists := l.ips[ip]
-    l.mu.RUnlock()
+	l.mu.RLock()
+	limiter, exists := l.ips[ip]
+	l.mu.RUnlock()
 
-    if !exists {
-        return l.AddIP(ip)
-    }
+	if !exists {
+		return l.AddIP(ip)
+	}
 
-    return limiter
+	return limiter
 }

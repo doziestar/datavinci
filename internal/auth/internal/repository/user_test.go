@@ -260,7 +260,7 @@ func (s *userTestSuite) testCheckPassword(t *testing.T) {
 	password := s.faker.Password(true, true, true, true, false, 32)
 	username := s.faker.Username()
 
-	hashedPassword, err := pkg.NewPasswordHasher(12).HashPassword(password) 
+	hashedPassword, err := pkg.NewPasswordHasher(12).HashPassword(password)
 	require.NoError(t, err, "Failed to hash password")
 
 	user, err := s.repo.Create(ctx, &ent.User{

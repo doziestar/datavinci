@@ -169,4 +169,3 @@ func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 
 	return handler(newCtx, req)
 }
-
