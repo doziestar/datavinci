@@ -8,7 +8,6 @@ import (
 	"auth/ent"
 	"auth/ent/enttest"
 	"auth/internal/repository"
-	"auth/pkg"
 
 	"github.com/brianvoe/gofakeit/v7"
 	_ "github.com/mattn/go-sqlite3"
@@ -260,20 +259,19 @@ func (s *userTestSuite) testCheckPassword(t *testing.T) {
 	password := s.faker.Password(true, true, true, true, false, 32)
 	username := s.faker.Username()
 
-	hashedPassword, err := pkg.NewPasswordHasher(12).HashPassword(password)
-	require.NoError(t, err, "Failed to hash password")
-
 	user, err := s.repo.Create(ctx, &ent.User{
 		Username: username,
 		Email:    s.faker.Email(),
-		Password: string(hashedPassword),
+		Password: password,
 	})
+	fmt.Println("user", user)
 	require.NoError(t, err, "Failed to create user")
 
 	isCorrect := s.repo.CheckPassword(ctx, username, password)
 	assert.True(t, isCorrect, "Password check should succeed")
 
-	isCorrect = s.repo.CheckPassword(ctx, username, "wrongPassword")
+	isCorrect = s.repo.CheckPassword(ctx, username, "wrongPassword2")
+	fmt.Println("isCorrect", isCorrect)
 	assert.False(t, isCorrect, "Password check should fail for incorrect password")
 
 	isCorrect = s.repo.CheckPassword(ctx, username, user.Password)
@@ -282,12 +280,19 @@ func (s *userTestSuite) testCheckPassword(t *testing.T) {
 
 func (s *userTestSuite) testSetPassword(t *testing.T) {
 	ctx := context.Background()
-	user := s.createUser(t)
-	oldPassword := user.Password
+	oldPassword := s.faker.Password(true, true, true, true, false, 32)
+	user := s.client.User.Create().
+		SetUsername(s.faker.Username()).
+		SetEmail(s.faker.Email()).
+		SetPassword(oldPassword).
+		SaveX(ctx)
 	newPassword := s.faker.Password(true, true, true, true, false, 32)
 
 	err := s.repo.SetPassword(ctx, user.Username, newPassword)
 	require.NoError(t, err, "Failed to set new password")
+
+	err = s.repo.SetPassword(ctx, "non-existent-username", newPassword)
+	assert.Error(t, err, "Expected error when setting password for non-existent user")
 
 	isCorrect := s.repo.CheckPassword(ctx, user.Username, newPassword)
 	assert.True(t, isCorrect, "New password check should succeed")
