@@ -8,16 +8,13 @@ package interceptor
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -113,6 +110,13 @@ func WithSupportedSchemes(schemes ...AuthScheme) AuthInterceptorOption {
 func WithTokenRefreshWindow(window time.Duration) AuthInterceptorOption {
 	return func(config *AuthInterceptorConfig) {
 		config.TokenRefreshWindow = window
+	}
+}
+
+// WithAPIKeyCache sets the cache for API key validation.
+func WithAPIKeyCache(cache *cache.Cache) AuthInterceptorOption {
+	return func(config *AuthInterceptorConfig) {
+		config.APIKeyCache = cache
 	}
 }
 
@@ -261,7 +265,9 @@ func defaultTokenValidator(tokenString string) (jwt.MapClaims, error) {
 // defaultAPIKeyValidator is the default implementation of API key validation.
 func defaultAPIKeyValidator(apiKey string) (bool, error) {
 	validKeys := map[string]bool{
-		// we will read from our database
+		"valid-api-key-1": true,
+		"valid-api-key-2": true,
+		"myApiKey":        true,
 	}
 
 	isValid, exists := validKeys[apiKey]
@@ -314,175 +320,6 @@ func GetUserClaims(ctx context.Context) (jwt.MapClaims, bool) {
 	return claims, ok
 }
 
-// TokenGenerator is a helper struct for generating JWT tokens.
-type TokenGenerator struct {
-	secretKey []byte
-	issuer    string
-	duration  time.Duration
-}
-
-// NewTokenGenerator creates a new TokenGenerator.
-func NewTokenGenerator(secretKey []byte, issuer string, duration time.Duration) *TokenGenerator {
-	return &TokenGenerator{
-		secretKey: secretKey,
-		issuer:    issuer,
-		duration:  duration,
-	}
-}
-
-// GenerateToken generates a new JWT token with the given claims.
-func (g *TokenGenerator) GenerateToken(claims jwt.MapClaims) (string, error) {
-	now := time.Now()
-	claims["iss"] = g.issuer
-	claims["iat"] = now.Unix()
-	claims["exp"] = now.Add(g.duration).Unix()
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(g.secretKey)
-}
-
-// PerIPRateLimiter is a helper struct for per-IP rate limiting.
-type PerIPRateLimiter struct {
-	ips map[string]*rate.Limiter
-	mu  *sync.RWMutex
-	r   rate.Limit
-	b   int
-}
-
-// NewPerIPRateLimiter creates a new PerIPRateLimiter.
-func NewPerIPRateLimiter(r rate.Limit, b int) *PerIPRateLimiter {
-	return &PerIPRateLimiter{
-		ips: make(map[string]*rate.Limiter),
-		mu:  &sync.RWMutex{},
-		r:   r,
-		b:   b,
-	}
-}
-
-// AddIP adds an IP address to the rate limiter.
-func (l *PerIPRateLimiter) AddIP(ip string) *rate.Limiter {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	limiter := rate.NewLimiter(l.r, l.b)
-	l.ips[ip] = limiter
-	return limiter
-}
-
-// GetLimiter returns the rate limiter for the given IP address.
-func (l *PerIPRateLimiter) GetLimiter(ip string) *rate.Limiter {
-	l.mu.Lock()
-	limiter, exists := l.ips[ip]
-
-	if !exists {
-		l.mu.Unlock()
-		return l.AddIP(ip)
-	}
-
-	l.mu.Unlock()
-	return limiter
-}
-
-// PasswordHasher is a helper struct for hashing and verifying passwords.
-type PasswordHasher struct {
-	cost int
-}
-
-// NewPasswordHasher creates a new PasswordHasher.
-//
-// Parameters:
-//   - cost: The cost of the bcrypt algorithm (default is 10).
-//
-// Usage:
-//
-//	hasher := NewPasswordHasher(12)
-func NewPasswordHasher(cost int) *PasswordHasher {
-	if cost == 0 {
-		cost = 10
-	}
-	return &PasswordHasher{cost: cost}
-}
-
-// HashPassword hashes a password using bcrypt.
-//
-// Parameters:
-//   - password: The password to hash.
-//
-// Returns:
-//   - The hashed password and an error if hashing fails.
-//
-// Usage:
-//
-//	hashedPassword, err := hasher.HashPassword("myPassword123")
-func (ph *PasswordHasher) HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), ph.cost)
-	return string(bytes), err
-}
-
-// CheckPassword checks if a password matches the hashed version.
-//
-// Parameters:
-//   - password: The password to check.
-//   - hashedPassword: The hashed password to compare against.
-//
-// Returns:
-//   - true if the password matches, false otherwise.
-//
-// Usage:
-//
-//	if hasher.CheckPassword("myPassword123", hashedPassword) {
-//	    // Password is correct
-//	}
-func (ph *PasswordHasher) CheckPassword(password, hashedPassword string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	return err == nil
-}
-
-// Base64Encoder is a helper struct for encoding and decoding Base64 strings.
-type Base64Encoder struct{}
-
-// NewBase64Encoder creates a new Base64Encoder.
-//
-// Usage:
-//
-//	encoder := NewBase64Encoder()
-func NewBase64Encoder() *Base64Encoder {
-	return &Base64Encoder{}
-}
-
-// Encode encodes a string to Base64.
-//
-// Parameters:
-//   - data: The string to encode.
-//
-// Returns:
-//   - The Base64 encoded string.
-//
-// Usage:
-//
-//	encoded := encoder.Encode("Hello, World!")
-func (b *Base64Encoder) Encode(data string) string {
-	return base64.StdEncoding.EncodeToString([]byte(data))
-}
-
-// Decode decodes a Base64 string.
-//
-// Parameters:
-//   - encodedData: The Base64 encoded string to decode.
-//
-// Returns:
-//   - The decoded string and an error if decoding fails.
-//
-// Usage:
-//
-//	decoded, err := encoder.Decode(encodedString)
-func (b *Base64Encoder) Decode(encodedData string) (string, error) {
-	data, err := base64.StdEncoding.DecodeString(encodedData)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
 
 // AuthMetadataKey is a helper function to get the metadata key for authentication.
 //
