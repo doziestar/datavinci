@@ -5,10 +5,9 @@ import (
 	"auth/ent"
 	"auth/ent/role"
 	"auth/ent/user"
+	"auth/pkg"
 	"context"
 	"time"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 // IUserRepository defines the interface for user-related operations.
@@ -472,7 +471,7 @@ func (r *UserRepository) CheckPassword(ctx context.Context, username, password s
 	if err != nil {
 		return false
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	_, err = pkg.NewPasswordHasher(12).VerifyPassword(user.Password, password)
 	return err == nil
 }
 
@@ -482,7 +481,7 @@ func (r *UserRepository) SetPassword(ctx context.Context, username, password str
 	if err != nil {
 		return err
 	}
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := pkg.NewPasswordHasher(12).HashPassword(password)
 	if err != nil {
 		return err
 	}
