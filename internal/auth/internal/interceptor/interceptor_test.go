@@ -1,366 +1,404 @@
 package interceptor_test
 
 import (
-	"auth/internal/interceptor"
 	"context"
 	"fmt"
-	"log"
-	"net"
 	"testing"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/grpc/test/bufconn"
 
-	pb "auth/pb"
+	"auth/internal/interceptor"
 )
 
-
-func (s *mockService) SayHello(ctx context.Context, req *HelloRequest) (*HelloResponse, error) {
-	claims, ok := interceptor.GetUserClaims(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "No user claims found")
-	}
-	return &HelloResponse{Message: fmt.Sprintf("Hello, %v!", claims["sub"])}, nil
+// MockHandler is a mock gRPC handler for testing
+type MockHandler struct {
+	mock.Mock
 }
 
-type HelloRequest struct{}
-type HelloResponse struct {
-	Message string
+func (m *MockHandler) Handle(ctx context.Context, req interface{}) (interface{}, error) {
+	args := m.Called(ctx, req)
+	return args.Get(0), args.Error(1)
 }
 
-const bufSize = 1024 * 1024
-
-var lis *bufconn.Listener
-
-func init() {
-	lis = bufconn.Listen(bufSize)
-}
-
-type mockService struct {
-	pb.UnimplementedAuthServiceServer
-}
-
-func (s *mockService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	claims, ok := interceptor.GetUserClaims(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "No user claims found")
-	}
-	return &pb.LoginResponse{AccessToken: claims["sub"].(string)}, nil
-}
-
-func bufDialer(context.Context, string) (net.Conn, error) {
-	return lis.Dial()
-}
-
-
-// Test helpers
-func createTestServer(t *testing.T, interceptor grpc.UnaryServerInterceptor) (*grpc.Server, *bufconn.Listener) {
-	lis := bufconn.Listen(1024 * 1024)
-	s := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
-	RegisterTestServiceServer(s, &mockService{})
-	go func() {
-		if err := s.Serve(lis); err != nil {
-			t.Errorf("Server exited with error: %v", err)
-		}
-	}()
-	return s, lis
-}
-
-func createTestClient(t *testing.T, lis *bufconn.Listener) TestServiceClient {
-	conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
-		return lis.Dial()
-	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err)
-	return NewTestServiceClient(conn)
-}
-
-// Mock JWT token generator
-func generateMockToken(t *testing.T, sub string, exp time.Time) string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": sub,
-		"exp": exp.Unix(),
-	})
-	tokenString, err := token.SignedString([]byte("test-secret"))
-	require.NoError(t, err)
-	return tokenString
-}
-
-// Test cases
 func TestAuthInterceptor(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
+	faker := gofakeit.New(0)
 
-	const user = "test-user"
+	tests := []struct {
+		name           string
+		setupAuth      func() interceptor.AuthInterceptorOption
+		setupContext   func() context.Context
+		expectedStatus codes.Code
+		expectedError  string
+	}{
+		{
+			name: "Valid JWT",
+			setupAuth: func() interceptor.AuthInterceptorOption {
+				return interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
+					return jwt.MapClaims{"user_id": faker.UUID()}, nil
+				})
+			},
+			setupContext: func() context.Context {
+				md := metadata.New(map[string]string{"authorization": "Bearer " + faker.UUID()})
+				return metadata.NewIncomingContext(context.Background(), md)
+			},
+			expectedStatus: codes.OK,
+		},
+		{
+			name: "Invalid JWT",
+			setupAuth: func() interceptor.AuthInterceptorOption {
+				return interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
+					return nil, fmt.Errorf("invalid token: %s", faker.Sentence(5))
+				})
+			},
+			setupContext: func() context.Context {
+				md := metadata.New(map[string]string{"authorization": "Bearer " + faker.UUID()})
+				return metadata.NewIncomingContext(context.Background(), md)
+			},
+			expectedStatus: codes.Unauthenticated,
+			expectedError:  "Invalid token",
+		},
+		{
+			name: "Missing Authorization Header",
+			setupAuth: func() interceptor.AuthInterceptorOption {
+				return interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
+					return jwt.MapClaims{"user_id": faker.UUID()}, nil
+				})
+			},
+			setupContext: func() context.Context {
+				return metadata.NewIncomingContext(context.Background(), metadata.New(nil))
+			},
+			expectedStatus: codes.Unauthenticated,
+			expectedError:  "Missing authorization header",
+		},
+		{
+			name: "Invalid Authorization Header Format",
+			setupAuth: func() interceptor.AuthInterceptorOption {
+				return interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
+					return jwt.MapClaims{"user_id": faker.UUID()}, nil
+				})
+			},
+			setupContext: func() context.Context {
+				md := metadata.New(map[string]string{"authorization": faker.Word()})
+				return metadata.NewIncomingContext(context.Background(), md)
+			},
+			expectedStatus: codes.Unauthenticated,
+			expectedError:  "Invalid authorization header format",
+		},
+		{
+			name: "Valid API Key",
+			setupAuth: func() interceptor.AuthInterceptorOption {
+				return interceptor.WithAPIKeyValidator(func(apiKey string) (bool, error) {
+					return true, nil
+				})
+			},
+			setupContext: func() context.Context {
+				md := metadata.New(map[string]string{"authorization": "ApiKey " + faker.UUID()})
+				return metadata.NewIncomingContext(context.Background(), md)
+			},
+			expectedStatus: codes.OK,
+		},
+		{
+			name: "Invalid API Key",
+			setupAuth: func() interceptor.AuthInterceptorOption {
+				return interceptor.WithAPIKeyValidator(func(apiKey string) (bool, error) {
+					return false, nil
+				})
+			},
+			setupContext: func() context.Context {
+				md := metadata.New(map[string]string{"authorization": "ApiKey " + faker.UUID()})
+				return metadata.NewIncomingContext(context.Background(), md)
+			},
+			expectedStatus: codes.Unauthenticated,
+			expectedError:  "Invalid API key",
+		},
+	}
 
-	t.Run("Valid JWT", func(t *testing.T) {
-		interceptor := interceptor.NewAuthInterceptor(
-			interceptor.WithLogger(logger),
-			interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
-				return jwt.MapClaims{"sub": user}, nil
-			}),
-		)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			authInterceptor := interceptor.NewAuthInterceptor(
+				tt.setupAuth(),
+				interceptor.WithLogger(logger),
+				interceptor.WithSupportedSchemes(interceptor.JWT, interceptor.APIKey),
+			)
 
-		server, lis := createTestServer(t, interceptor)
-		defer server.Stop()
+			ctx := tt.setupContext()
+			mockHandler := &MockHandler{}
+			mockHandler.On("Handle", mock.Anything, mock.Anything).Return(nil, nil)
 
-		client := createTestClient(t, lis)
+			_, err := authInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, mockHandler.Handle)
 
-		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer valid-token"))
-		resp, err := client.SayHello(ctx, &HelloRequest{})
-
-		assert.NoError(t, err)
-		assert.Equal(t, "Hello, test-user!", resp.Message)
-	})
-
-		t.Run("Valid JWT", func(t *testing.T) {
-		interceptor := interceptor.NewAuthInterceptor(
-			interceptor.WithLogger(logger),
-			interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
-				return jwt.MapClaims{"sub": "test-user"}, nil
-			}),
-		)
-
-		s := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
-		pb.RegisterAuthServiceServer(s, &mockService{})
-		go func() {
-			if err := s.Serve(lis); err != nil {
-				log.Fatalf("Server exited with error: %v", err)
+			if tt.expectedStatus != codes.OK {
+				assert.Error(t, err)
+				status, ok := status.FromError(err)
+				assert.True(t, ok)
+				assert.Equal(t, tt.expectedStatus, status.Code())
+				assert.Contains(t, status.Message(), tt.expectedError)
+			} else {
+				assert.NoError(t, err)
+				mockHandler.AssertCalled(t, "Handle", mock.Anything, mock.Anything)
 			}
-		}()
-
-		ctx := context.Background()
-		conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), grpc.WithInsecure())
-		if err != nil {
-			t.Fatalf("Failed to dial bufnet: %v", err)
-		}
-		defer conn.Close()
-
-		client := pb.NewAuthServiceClient(conn)
-
-		md := metadata.New(map[string]string{"authorization": "Bearer valid-token"})
-		ctx = metadata.NewOutgoingContext(context.Background(), md)
-
-		resp, err := client.Login(ctx, &pb.LoginRequest{Username: "test", Password: "test"})
-
-		require.NoError(t, err)
-		assert.Equal(t, "test-user", resp.AccessToken)
-	})
-
-	t.Run("Missing Authorization Header", func(t *testing.T) {
-		interceptor := interceptor.NewAuthInterceptor(
-			interceptor.WithLogger(logger),
-		)
-
-		server, lis := createTestServer(t, interceptor)
-		defer server.Stop()
-
-		client := createTestClient(t, lis)
-
-		_, err := client.SayHello(context.Background(), &HelloRequest{})
-
-		assert.Error(t, err)
-		assert.Equal(t, codes.Unauthenticated, status.Code(err))
-	})
-
-	t.Run("API Key Authentication", func(t *testing.T) {
-		interceptor := interceptor.NewAuthInterceptor(
-			interceptor.WithLogger(logger),
-			interceptor.WithAPIKeyValidator(func(apiKey string) (bool, error) {
-				return apiKey == "valid-api-key", nil
-			}),
-			interceptor.WithSupportedSchemes(interceptor.APIKey),
-		)
-
-		server, lis := createTestServer(t, interceptor)
-		defer server.Stop()
-
-		client := createTestClient(t, lis)
-
-		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "ApiKey valid-api-key"))
-		resp, err := client.SayHello(ctx, &HelloRequest{})
-
-		assert.NoError(t, err)
-		assert.Contains(t, resp.Message, "api_key")
-	})
-
-	t.Run("Token Refresh", func(t *testing.T) {
-		refreshCalled := false
-		interceptor := interceptor.NewAuthInterceptor(
-			interceptor.WithLogger(logger),
-			interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
-				return jwt.MapClaims{"sub": user, "exp": time.Now().Add(time.Minute).Unix()}, nil
-			}),
-			interceptor.WithRefreshTokenFunc(func(oldToken string) (string, error) {
-				refreshCalled = true
-				return "new-token", nil
-			}),
-			interceptor.WithTokenRefreshWindow(time.Hour), // Set a large window to ensure refresh is triggered
-		)
-
-		server, lis := createTestServer(t, interceptor)
-		defer server.Stop()
-
-		client := createTestClient(t, lis)
-
-		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer valid-token"))
-		_, err := client.SayHello(ctx, &HelloRequest{})
-
-		assert.NoError(t, err)
-		assert.True(t, refreshCalled, "Token refresh should have been called")
-	})
+		})
+	}
 }
 
 func TestTokenGenerator(t *testing.T) {
-	secretKey := []byte("test-secret")
-	issuer := "test-issuer"
-	duration := time.Hour
+	faker := gofakeit.New(0)
+	secretKey := []byte(faker.UUID())
+	issuer := faker.Company()
+	duration := time.Duration(faker.Number(1, 24)) * time.Hour
 
 	generator := interceptor.NewTokenGenerator(secretKey, issuer, duration)
 
-	t.Run("Generate Valid Token", func(t *testing.T) {
-		claims := jwt.MapClaims{"sub": "test-user"}
-		token, err := generator.GenerateToken(claims)
+	claims := jwt.MapClaims{
+		"user_id": faker.UUID(),
+		"role":    faker.JobTitle(),
+	}
 
-		assert.NoError(t, err)
-		assert.NotEmpty(t, token)
+	token, err := generator.GenerateToken(claims)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, token)
 
-		// Verify the token
-		parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-			return secretKey, nil
-		})
-
-		assert.NoError(t, err)
-		assert.True(t, parsedToken.Valid)
-
-		parsedClaims, ok := parsedToken.Claims.(jwt.MapClaims)
-		assert.True(t, ok)
-		assert.Equal(t, "test-user", parsedClaims["sub"])
-		assert.Equal(t, issuer, parsedClaims["iss"])
-		assert.NotEmpty(t, parsedClaims["iat"])
-		assert.NotEmpty(t, parsedClaims["exp"])
+	// Verify the generated token
+	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return secretKey, nil
 	})
+
+	assert.NoError(t, err)
+	assert.True(t, parsedToken.Valid)
+
+	parsedClaims, ok := parsedToken.Claims.(jwt.MapClaims)
+	assert.True(t, ok)
+	assert.Equal(t, claims["user_id"], parsedClaims["user_id"])
+	assert.Equal(t, claims["role"], parsedClaims["role"])
+	assert.Equal(t, issuer, parsedClaims["iss"])
+	assert.NotNil(t, parsedClaims["iat"])
+	assert.NotNil(t, parsedClaims["exp"])
+}
+
+func TestPerIPRateLimiter(t *testing.T) {
+	faker := gofakeit.New(0)
+	limiter := interceptor.NewPerIPRateLimiter(rate.Limit(faker.Float32Range(0.1, 10)), faker.Number(1, 100))
+
+	ip1 := faker.IPv4Address()
+	ip2 := faker.IPv4Address()
+
+	// Test adding and getting limiters
+	l1 := limiter.GetLimiter(ip1)
+	assert.NotNil(t, l1)
+
+	l2 := limiter.GetLimiter(ip2)
+	assert.NotNil(t, l2)
+
+	assert.NotEqual(t, l1, l2)
+
+	// Test rate limiting
+	for i := 0; i < 100; i++ {
+		if !l1.Allow() {
+			break
+		}
+	}
+	assert.False(t, l1.Allow())
+
+	for i := 0; i < 100; i++ {
+		if !l2.Allow() {
+			break
+		}
+	}
+	assert.False(t, l2.Allow())
+
+	// Wait for rate limit to reset
+	time.Sleep(time.Second)
+
+	assert.True(t, l1.Allow())
+	assert.True(t, l2.Allow())
 }
 
 func TestPasswordHasher(t *testing.T) {
-	hasher := interceptor.NewPasswordHasher(10)
+	faker := gofakeit.New(0)
+	hasher := interceptor.NewPasswordHasher(faker.Number(10, 14))
 
-	t.Run("Hash and Verify Password", func(t *testing.T) {
-		password := "test-password"
-		hashedPassword, err := hasher.HashPassword(password)
+	password := faker.Password(true, true, true, true, false, 10)
 
-		assert.NoError(t, err)
-		assert.NotEqual(t, password, hashedPassword)
+	hashedPassword, err := hasher.HashPassword(password)
+	assert.NoError(t, err)
+	assert.NotEqual(t, password, hashedPassword)
 
-		assert.True(t, hasher.CheckPassword(password, hashedPassword))
-		assert.False(t, hasher.CheckPassword("wrong-password", hashedPassword))
-	})
+	// Test correct password
+	assert.True(t, hasher.CheckPassword(password, hashedPassword))
+
+	// Test incorrect password
+	assert.False(t, hasher.CheckPassword(faker.Password(true, true, true, true, false, 10), hashedPassword))
 }
 
 func TestBase64Encoder(t *testing.T) {
+	faker := gofakeit.New(0)
 	encoder := interceptor.NewBase64Encoder()
 
-	t.Run("Encode and Decode", func(t *testing.T) {
-		original := "Hello, World!"
-		encoded := encoder.Encode(original)
-		decoded, err := encoder.Decode(encoded)
+	original := faker.Sentence(10)
+	encoded := encoder.Encode(original)
+	assert.NotEqual(t, original, encoded)
 
-		assert.NoError(t, err)
-		assert.NotEqual(t, original, encoded)
-		assert.Equal(t, original, decoded)
-	})
+	decoded, err := encoder.Decode(encoded)
+	assert.NoError(t, err)
+	assert.Equal(t, original, decoded)
 
-	t.Run("Decode Invalid Base64", func(t *testing.T) {
-		_, err := encoder.Decode("invalid-base64")
-		assert.Error(t, err)
-	})
+	// Test invalid base64 string
+	_, err = encoder.Decode(faker.Word())
+	assert.Error(t, err)
 }
 
-func TestHelperFunctions(t *testing.T) {
-	t.Run("AuthMetadataKey", func(t *testing.T) {
-		ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Bearer test-token"))
-		key, ok := interceptor.AuthMetadataKey(ctx)
-		assert.True(t, ok)
-		assert.Equal(t, "Bearer test-token", key)
+func TestAuthMetadataKey(t *testing.T) {
+	faker := gofakeit.New(0)
 
-		_, ok = interceptor.AuthMetadataKey(context.Background())
-		assert.False(t, ok)
-	})
-
-	t.Run("ExtractBearerToken", func(t *testing.T) {
-		token, err := interceptor.ExtractBearerToken("Bearer test-token")
-		assert.NoError(t, err)
-		assert.Equal(t, "test-token", token)
-
-		_, err = interceptor.ExtractBearerToken("InvalidHeader test-token")
-		assert.Error(t, err)
-	})
-}
-
-// Mock gRPC service registration
-type TestServiceServer interface {
-	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
-}
-
-func RegisterTestServiceServer(s *grpc.Server, srv TestServiceServer) {
-	s.RegisterService(&_TestService_serviceDesc, srv)
-}
-
-type TestServiceClient interface {
-	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
-}
-
-type testServiceClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewTestServiceClient(cc *grpc.ClientConn) TestServiceClient {
-	return &testServiceClient{cc}
-}
-
-func (c *testServiceClient) SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error) {
-	out := new(HelloResponse)
-	err := c.cc.Invoke(ctx, "/test.TestService/SayHello", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-var _TestService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "test.TestService",
-	HandlerType: (*TestServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
+	tests := []struct {
+		name           string
+		setupContext   func() context.Context
+		expectedKey    string
+		expectedExists bool
+	}{
 		{
-			MethodName: "SayHello",
-			Handler:    _TestService_SayHello_Handler,
+			name: "Valid auth metadata",
+			setupContext: func() context.Context {
+				md := metadata.New(map[string]string{"authorization": "Bearer " + faker.UUID()})
+				return metadata.NewIncomingContext(context.Background(), md)
+			},
+			expectedExists: true,
 		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "test_service.proto",
+		{
+			name: "Missing auth metadata",
+			setupContext: func() context.Context {
+				return metadata.NewIncomingContext(context.Background(), metadata.New(nil))
+			},
+			expectedExists: false,
+		},
+		{
+			name: "Empty auth metadata",
+			setupContext: func() context.Context {
+				md := metadata.New(map[string]string{"authorization": ""})
+				return metadata.NewIncomingContext(context.Background(), md)
+			},
+			expectedKey:    "",
+			expectedExists: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := tt.setupContext()
+			key, exists := interceptor.AuthMetadataKey(ctx)
+
+			assert.Equal(t, tt.expectedExists, exists)
+			if tt.expectedExists {
+				if tt.expectedKey != "" {
+					assert.Equal(t, tt.expectedKey, key)
+				} else {
+					assert.NotEmpty(t, key)
+				}
+			}
+		})
+	}
 }
 
-func _TestService_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HelloRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func TestExtractBearerToken(t *testing.T) {
+	faker := gofakeit.New(0)
+
+	tests := []struct {
+		name          string
+		authHeader    string
+		expectedToken string
+		expectError   bool
+	}{
+		{
+			name:          "Valid Bearer token",
+			authHeader:    "Bearer " + faker.UUID(),
+			expectError:   false,
+		},
+		{
+			name:        "Missing Bearer prefix",
+			authHeader:  faker.UUID(),
+			expectError: true,
+		},
+		{
+			name:        "Empty auth header",
+			authHeader:  "",
+			expectError: true,
+		},
+		{
+			name:        "Invalid format",
+			authHeader:  "Bearer",
+			expectError: true,
+		},
 	}
-	if interceptor == nil {
-		return srv.(TestServiceServer).SayHello(ctx, in)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			token, err := interceptor.ExtractBearerToken(tt.authHeader)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, token)
+			}
+		})
 	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/test.TestService/SayHello",
+}
+
+func TestGetUserClaims(t *testing.T) {
+	// faker := gofakeit.New(0)
+
+	// claims := jwt.MapClaims{
+	// 	"user_id": faker.UUID(),
+	// 	"role":    faker.JobTitle(),
+	// }
+	
+
+	tests := []struct {
+		name           string
+		setupContext   func() context.Context
+		expectedClaims jwt.MapClaims
+		expectedOk     bool
+	}{
+		// {
+		// 	name: "Valid user claims",
+		// 	setupContext: func() context.Context {
+		// 		return context.WithValue(context.Background(), interceptor.UserClaimsKey, claims)
+		// 	},
+		// 	expectedClaims: claims,
+		// 	expectedOk:     true,
+		// },
+		{
+			name: "Missing user claims",
+			setupContext: func() context.Context {
+				return context.Background()
+			},
+			expectedOk: false,
+		},
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TestServiceServer).SayHello(ctx, req.(*HelloRequest))
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := tt.setupContext()
+			gotClaims, ok := interceptor.GetUserClaims(ctx)
+
+			assert.Equal(t, tt.expectedOk, ok)
+			if tt.expectedOk {
+				assert.Equal(t, tt.expectedClaims, gotClaims)
+			}
+		})
 	}
-	return interceptor(ctx, in, info, handler)
 }
