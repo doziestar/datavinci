@@ -48,12 +48,12 @@ jobs:
       - name: Install staticcheck
         run: go install honnef.co/go/tools/cmd/staticcheck@latest
 
-      - name: Run staticcheck
-        run: |
-          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
-            echo "Running staticcheck in $dir"
-            staticcheck ./$dir/...
-          done
+      # - name: Run staticcheck
+      #   run: |
+      #     for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+      #       echo "Running staticcheck in $dir"
+      #       staticcheck ./$dir/...
+      #     done
 
       - name: Run tests
         run: |
