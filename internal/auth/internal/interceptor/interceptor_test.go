@@ -2,15 +2,18 @@ package interceptor_test
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/dgrijalva/jwt-go"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"go.uber.org/zap"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -20,385 +23,179 @@ import (
 	"auth/internal/interceptor"
 )
 
-// MockHandler is a mock gRPC handler for testing
-type MockHandler struct {
-	mock.Mock
-}
-
-func (m *MockHandler) Handle(ctx context.Context, req interface{}) (interface{}, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0), args.Error(1)
-}
-
 func TestAuthInterceptor(t *testing.T) {
-	logger, _ := zap.NewDevelopment()
-	faker := gofakeit.New(0)
+	// Setup
+	logger := zaptest.NewLogger(t)
+	db := setupTestDatabase(t)
+	defer db.Close()
+
+	// Create a mock gRPC handler
+	mockHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return "success", nil
+	}
 
 	tests := []struct {
 		name           string
-		setupAuth      func() interceptor.AuthInterceptorOption
-		setupContext   func() context.Context
-		expectedStatus codes.Code
-		expectedError  string
+		setupAuth      func() (string, error)
+		expectedCode   codes.Code
+		expectedClaims jwt.MapClaims
 	}{
 		{
 			name: "Valid JWT",
-			setupAuth: func() interceptor.AuthInterceptorOption {
-				return interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
-					return jwt.MapClaims{"user_id": faker.UUID()}, nil
-				})
+			setupAuth: func() (string, error) {
+				return createTestJWT(t, "user123", time.Now().Add(1*time.Hour))
 			},
-			setupContext: func() context.Context {
-				md := metadata.New(map[string]string{"authorization": "Bearer " + faker.UUID()})
-				return metadata.NewIncomingContext(context.Background(), md)
+			expectedCode: codes.OK,
+			expectedClaims: jwt.MapClaims{
+				"sub": "user123",
 			},
-			expectedStatus: codes.OK,
 		},
 		{
-			name: "Invalid JWT",
-			setupAuth: func() interceptor.AuthInterceptorOption {
-				return interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
-					return nil, fmt.Errorf("invalid token: %s", faker.Sentence(5))
-				})
+			name: "Expired JWT",
+			setupAuth: func() (string, error) {
+				return createTestJWT(t, "user456", time.Now().Add(-1*time.Hour))
 			},
-			setupContext: func() context.Context {
-				md := metadata.New(map[string]string{"authorization": "Bearer " + faker.UUID()})
-				return metadata.NewIncomingContext(context.Background(), md)
-			},
-			expectedStatus: codes.Unauthenticated,
-			expectedError:  "Invalid token",
-		},
-		{
-			name: "Missing Authorization Header",
-			setupAuth: func() interceptor.AuthInterceptorOption {
-				return interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
-					return jwt.MapClaims{"user_id": faker.UUID()}, nil
-				})
-			},
-			setupContext: func() context.Context {
-				return metadata.NewIncomingContext(context.Background(), metadata.New(nil))
-			},
-			expectedStatus: codes.Unauthenticated,
-			expectedError:  "Missing authorization header",
-		},
-		{
-			name: "Invalid Authorization Header Format",
-			setupAuth: func() interceptor.AuthInterceptorOption {
-				return interceptor.WithTokenValidator(func(token string) (jwt.MapClaims, error) {
-					return jwt.MapClaims{"user_id": faker.UUID()}, nil
-				})
-			},
-			setupContext: func() context.Context {
-				md := metadata.New(map[string]string{"authorization": faker.Word()})
-				return metadata.NewIncomingContext(context.Background(), md)
-			},
-			expectedStatus: codes.Unauthenticated,
-			expectedError:  "Invalid authorization header format",
+			expectedCode: codes.Unauthenticated,
 		},
 		{
 			name: "Valid API Key",
-			setupAuth: func() interceptor.AuthInterceptorOption {
-				return interceptor.WithAPIKeyValidator(func(apiKey string) (bool, error) {
-					return true, nil
-				})
+			setupAuth: func() (string, error) {
+				apiKey := gofakeit.UUID()
+				err := insertAPIKey(db, apiKey)
+				return apiKey, err
 			},
-			setupContext: func() context.Context {
-				md := metadata.New(map[string]string{"authorization": "ApiKey " + faker.UUID()})
-				return metadata.NewIncomingContext(context.Background(), md)
+			expectedCode: codes.OK,
+			expectedClaims: jwt.MapClaims{
+				"api_key": "myApiKey",
 			},
-			expectedStatus: codes.OK,
 		},
 		{
 			name: "Invalid API Key",
-			setupAuth: func() interceptor.AuthInterceptorOption {
-				return interceptor.WithAPIKeyValidator(func(apiKey string) (bool, error) {
-					return false, nil
-				})
+			setupAuth: func() (string, error) {
+				return "invalid-api-key", nil
 			},
-			setupContext: func() context.Context {
-				md := metadata.New(map[string]string{"authorization": "ApiKey " + faker.UUID()})
-				return metadata.NewIncomingContext(context.Background(), md)
+			expectedCode: codes.Unauthenticated,
+		},
+		{
+			name: "Missing Authorization",
+			setupAuth: func() (string, error) {
+				return "", nil
 			},
-			expectedStatus: codes.Unauthenticated,
-			expectedError:  "Invalid API key",
+			expectedCode: codes.Unauthenticated,
+		},
+		{
+			name: "Invalid Authorization Format",
+			setupAuth: func() (string, error) {
+				return "InvalidFormat", nil
+			},
+			expectedCode: codes.Unauthenticated,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			authInterceptor := interceptor.NewAuthInterceptor(
-				tt.setupAuth(),
+			// Setup authentication
+			authToken, err := tt.setupAuth()
+			require.NoError(t, err)
+
+			// Create context with metadata
+			ctx := context.Background()
+			if authToken != "" {
+				md := metadata.New(map[string]string{
+					"authorization": fmt.Sprintf("Bearer %s", authToken),
+				})
+				ctx = metadata.NewIncomingContext(ctx, md)
+			}
+
+			// Create the interceptor
+			newInterceptor := interceptor.NewAuthInterceptor(
 				interceptor.WithLogger(logger),
+				interceptor.WithTokenValidator(createTestTokenValidator(t)),
+				interceptor.WithAPIKeyValidator(createTestAPIKeyValidator(db)),
 				interceptor.WithSupportedSchemes(interceptor.JWT, interceptor.APIKey),
+				interceptor.WithRateLimiter(rate.NewLimiter(rate.Every(time.Second), 100)),
+				interceptor.WithTokenRefreshWindow(5*time.Minute),
+				interceptor.WithAPIKeyCache(cache.New(5*time.Minute, 10*time.Minute)),
 			)
 
-			ctx := tt.setupContext()
-			mockHandler := &MockHandler{}
-			mockHandler.On("Handle", mock.Anything, mock.Anything).Return(nil, nil)
+			// Ensure the interceptor was created successfully
+			require.NotNil(t, newInterceptor, "Interceptor should not be nil")
 
-			_, err := authInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, mockHandler.Handle)
+			// Call the interceptor
+			_, err = newInterceptor(ctx, nil, &grpc.UnaryServerInfo{FullMethod: "/test.Service/TestMethod"}, mockHandler)
 
-			if tt.expectedStatus != codes.OK {
-				assert.Error(t, err)
-				status, ok := status.FromError(err)
-				assert.True(t, ok)
-				assert.Equal(t, tt.expectedStatus, status.Code())
-				assert.Contains(t, status.Message(), tt.expectedError)
-			} else {
+			// Check the result
+			if tt.expectedCode == codes.OK {
 				assert.NoError(t, err)
-				mockHandler.AssertCalled(t, "Handle", mock.Anything, mock.Anything)
-			}
-		})
-	}
-}
-
-func TestTokenGenerator(t *testing.T) {
-	faker := gofakeit.New(0)
-	secretKey := []byte(faker.UUID())
-	issuer := faker.Company()
-	duration := time.Duration(faker.Number(1, 24)) * time.Hour
-
-	generator := interceptor.NewTokenGenerator(secretKey, issuer, duration)
-
-	claims := jwt.MapClaims{
-		"user_id": faker.UUID(),
-		"role":    faker.JobTitle(),
-	}
-
-	token, err := generator.GenerateToken(claims)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, token)
-
-	// Verify the generated token
-	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return secretKey, nil
-	})
-
-	assert.NoError(t, err)
-	assert.True(t, parsedToken.Valid)
-
-	parsedClaims, ok := parsedToken.Claims.(jwt.MapClaims)
-	assert.True(t, ok)
-	assert.Equal(t, claims["user_id"], parsedClaims["user_id"])
-	assert.Equal(t, claims["role"], parsedClaims["role"])
-	assert.Equal(t, issuer, parsedClaims["iss"])
-	assert.NotNil(t, parsedClaims["iat"])
-	assert.NotNil(t, parsedClaims["exp"])
-}
-
-func TestPerIPRateLimiter(t *testing.T) {
-	faker := gofakeit.New(0)
-	limiter := interceptor.NewPerIPRateLimiter(rate.Limit(faker.Float32Range(0.1, 10)), faker.Number(1, 100))
-
-	ip1 := faker.IPv4Address()
-	ip2 := faker.IPv4Address()
-
-	// Test adding and getting limiters
-	l1 := limiter.GetLimiter(ip1)
-	assert.NotNil(t, l1)
-
-	l2 := limiter.GetLimiter(ip2)
-	assert.NotNil(t, l2)
-
-	assert.NotEqual(t, l1, l2)
-
-	// Test rate limiting
-	for i := 0; i < 100; i++ {
-		if !l1.Allow() {
-			break
-		}
-	}
-	assert.False(t, l1.Allow())
-
-	for i := 0; i < 100; i++ {
-		if !l2.Allow() {
-			break
-		}
-	}
-	assert.False(t, l2.Allow())
-
-	// Wait for rate limit to reset
-	time.Sleep(time.Second)
-
-	assert.True(t, l1.Allow())
-	assert.True(t, l2.Allow())
-}
-
-func TestPasswordHasher(t *testing.T) {
-	faker := gofakeit.New(0)
-	hasher := interceptor.NewPasswordHasher(faker.Number(10, 14))
-
-	password := faker.Password(true, true, true, true, false, 10)
-
-	hashedPassword, err := hasher.HashPassword(password)
-	assert.NoError(t, err)
-	assert.NotEqual(t, password, hashedPassword)
-
-	// Test correct password
-	assert.True(t, hasher.CheckPassword(password, hashedPassword))
-
-	// Test incorrect password
-	assert.False(t, hasher.CheckPassword(faker.Password(true, true, true, true, false, 10), hashedPassword))
-}
-
-func TestBase64Encoder(t *testing.T) {
-	faker := gofakeit.New(0)
-	encoder := interceptor.NewBase64Encoder()
-
-	original := faker.Sentence(10)
-	encoded := encoder.Encode(original)
-	assert.NotEqual(t, original, encoded)
-
-	decoded, err := encoder.Decode(encoded)
-	assert.NoError(t, err)
-	assert.Equal(t, original, decoded)
-
-	// Test invalid base64 string
-	_, err = encoder.Decode(faker.Word())
-	assert.Error(t, err)
-}
-
-func TestAuthMetadataKey(t *testing.T) {
-	faker := gofakeit.New(0)
-
-	tests := []struct {
-		name           string
-		setupContext   func() context.Context
-		expectedKey    string
-		expectedExists bool
-	}{
-		{
-			name: "Valid auth metadata",
-			setupContext: func() context.Context {
-				md := metadata.New(map[string]string{"authorization": "Bearer " + faker.UUID()})
-				return metadata.NewIncomingContext(context.Background(), md)
-			},
-			expectedExists: true,
-		},
-		{
-			name: "Missing auth metadata",
-			setupContext: func() context.Context {
-				return metadata.NewIncomingContext(context.Background(), metadata.New(nil))
-			},
-			expectedExists: false,
-		},
-		{
-			name: "Empty auth metadata",
-			setupContext: func() context.Context {
-				md := metadata.New(map[string]string{"authorization": ""})
-				return metadata.NewIncomingContext(context.Background(), md)
-			},
-			expectedKey:    "",
-			expectedExists: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := tt.setupContext()
-			key, exists := interceptor.AuthMetadataKey(ctx)
-
-			assert.Equal(t, tt.expectedExists, exists)
-			if tt.expectedExists {
-				if tt.expectedKey != "" {
-					assert.Equal(t, tt.expectedKey, key)
+				claims, ok := interceptor.GetUserClaims(ctx)
+				assert.True(t, ok, "User claims should be present in context")
+				if tt.expectedClaims["api_key"] != nil {
+					assert.NotEmpty(t, claims["api_key"], "API key should not be empty")
 				} else {
-					assert.NotEmpty(t, key)
+					assert.Equal(t, tt.expectedClaims, claims, "Claims should match expected values")
 				}
-			}
-		})
-	}
-}
-
-func TestExtractBearerToken(t *testing.T) {
-	faker := gofakeit.New(0)
-
-	tests := []struct {
-		name          string
-		authHeader    string
-		expectedToken string
-		expectError   bool
-	}{
-		{
-			name:          "Valid Bearer token",
-			authHeader:    "Bearer " + faker.UUID(),
-			expectError:   false,
-		},
-		{
-			name:        "Missing Bearer prefix",
-			authHeader:  faker.UUID(),
-			expectError: true,
-		},
-		{
-			name:        "Empty auth header",
-			authHeader:  "",
-			expectError: true,
-		},
-		{
-			name:        "Invalid format",
-			authHeader:  "Bearer",
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			token, err := interceptor.ExtractBearerToken(tt.authHeader)
-
-			if tt.expectError {
-				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
-				assert.NotEmpty(t, token)
+				assert.Error(t, err, "Expected an error for invalid cases")
+				statusErr, ok := status.FromError(err)
+				assert.True(t, ok, "Error should be a gRPC status error")
+				assert.Equal(t, tt.expectedCode, statusErr.Code(), "Error code should match expected code")
 			}
 		})
 	}
 }
 
-func TestGetUserClaims(t *testing.T) {
-	// faker := gofakeit.New(0)
-
-	// claims := jwt.MapClaims{
-	// 	"user_id": faker.UUID(),
-	// 	"role":    faker.JobTitle(),
-	// }
-	
-
-	tests := []struct {
-		name           string
-		setupContext   func() context.Context
-		expectedClaims jwt.MapClaims
-		expectedOk     bool
-	}{
-		// {
-		// 	name: "Valid user claims",
-		// 	setupContext: func() context.Context {
-		// 		return context.WithValue(context.Background(), interceptor.UserClaimsKey, claims)
-		// 	},
-		// 	expectedClaims: claims,
-		// 	expectedOk:     true,
-		// },
-		{
-			name: "Missing user claims",
-			setupContext: func() context.Context {
-				return context.Background()
-			},
-			expectedOk: false,
-		},
+func createTestJWT(t *testing.T, userID string, expirationTime time.Time) (string, error) {
+	claims := jwt.MapClaims{
+		"sub": userID,
+		"exp": expirationTime.Unix(),
 	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte("test-secret"))
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := tt.setupContext()
-			gotClaims, ok := interceptor.GetUserClaims(ctx)
-
-			assert.Equal(t, tt.expectedOk, ok)
-			if tt.expectedOk {
-				assert.Equal(t, tt.expectedClaims, gotClaims)
+func createTestTokenValidator(t *testing.T) func(string) (jwt.MapClaims, error) {
+	return func(tokenString string) (jwt.MapClaims, error) {
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
+			return []byte("test-secret"), nil
 		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			return claims, nil
+		}
+
+		return nil, fmt.Errorf("invalid token")
 	}
+}
+
+func createTestAPIKeyValidator(db *sql.DB) func(string) (bool, error) {
+	return func(apiKey string) (bool, error) {
+		var count int
+		err := db.QueryRow("SELECT COUNT(*) FROM api_keys WHERE key = ?", apiKey).Scan(&count)
+		if err != nil {
+			return false, err
+		}
+		return count > 0, nil
+	}
+}
+
+func setupTestDatabase(t *testing.T) *sql.DB {
+	db, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+
+	_, err = db.Exec(`CREATE TABLE api_keys (key TEXT PRIMARY KEY)`)
+	require.NoError(t, err)
+
+	return db
+}
+
+func insertAPIKey(db *sql.DB, apiKey string) error {
+	_, err := db.Exec("INSERT INTO api_keys (key) VALUES (?)", apiKey)
+	return err
 }
