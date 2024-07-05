@@ -1,12 +1,12 @@
 package repository
 
 import (
-    "auth/ent"
-    "context"
-    "time"
+	"auth/ent"
+	"context"
+	"time"
 
-    "auth/ent/role"
-    "auth/ent/user"
+	"auth/ent/role"
+	"auth/ent/user"
 )
 
 // IRoleRepository defines the interface for role-related operations.
@@ -476,7 +476,7 @@ func (r *RoleRepository) GetUsersInRole(ctx context.Context, roleID string) ([]*
 
 func (r *RoleRepository) Search(ctx context.Context, query string) ([]*ent.Role, error) {
     return r.client.Role.Query().
-        Where(role.NameContains(query)).
+        Where(role.NameHasPrefix(query)).
         All(ctx)
 }
 
