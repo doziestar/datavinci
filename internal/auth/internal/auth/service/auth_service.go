@@ -155,7 +155,7 @@ func (s *AuthService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 		return nil, status.Errorf(codes.Internal, "Failed to fetch user: %v", err)
 	}
 
-	if user == nil || !s.userRepo.CheckPassword(ctx, req.Password) {
+	if user == nil || !s.userRepo.CheckPassword(ctx, user.Username, req.Password) {
 		return nil, status.Errorf(codes.Unauthenticated, "Invalid username or password")
 	}
 
