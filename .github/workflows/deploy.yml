@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -14,9 +14,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.18
-      - name: Test
-        run: go test ./...
+          go-version: 1.21
+      - name: Test authentication
+        run: go test -v ./internal/auth/...
+      - name: Test datasource
+        run: go test -v ./internal/datasource/...
+      - name: Test visualization
+        run: go test -v ./internal/visualization/...s
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
 
