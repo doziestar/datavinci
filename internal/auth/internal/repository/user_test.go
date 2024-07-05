@@ -8,12 +8,12 @@ import (
 	"auth/ent"
 	"auth/ent/enttest"
 	"auth/internal/repository"
+	"auth/pkg"
 
 	"github.com/brianvoe/gofakeit/v7"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type userTestSuite struct {
@@ -260,7 +260,7 @@ func (s *userTestSuite) testCheckPassword(t *testing.T) {
 	password := s.faker.Password(true, true, true, true, false, 32)
 	username := s.faker.Username()
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := pkg.NewPasswordHasher(12).HashPassword(password) 
 	require.NoError(t, err, "Failed to hash password")
 
 	user, err := s.repo.Create(ctx, &ent.User{
