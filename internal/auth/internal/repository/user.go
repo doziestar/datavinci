@@ -7,6 +7,7 @@ import (
 	"auth/ent/user"
 	"auth/pkg"
 	"context"
+	"pkg/common/errors"
 	"time"
 )
 
@@ -471,19 +472,20 @@ func (r *UserRepository) CheckPassword(ctx context.Context, username, password s
 	if err != nil {
 		return false
 	}
-	_, err = pkg.NewPasswordHasher(12).VerifyPassword(user.Password, password)
-	return err == nil
+	valid, err := pkg.NewPasswordHasher(12).VerifyPassword(user.Password, password)
+
+	return err == nil && valid
 }
 
 // SetPassword sets a new password for a user.
 func (r *UserRepository) SetPassword(ctx context.Context, username, password string) error {
 	user, err := r.client.User.Query().Where(user.Username(username)).Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return errors.NewError(errors.ErrorTypeNotFound, "User not found", err)
+		}
 		return err
 	}
-	hashedPassword, err := pkg.NewPasswordHasher(12).HashPassword(password)
-	if err != nil {
-		return err
-	}
-	return r.client.User.UpdateOne(user).SetPassword(string(hashedPassword)).Exec(ctx)
+
+	return r.client.User.UpdateOne(user).SetPassword(password).Exec(ctx)
 }
