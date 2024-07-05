@@ -30,7 +30,7 @@ const (
 	// JWT authentication scheme.
 	JWT AuthScheme = "Bearer"
 	// APIKey authentication scheme.
-	APIKey AuthScheme = "ApiKey"
+	APIKey AuthScheme = "APIKey"
 )
 
 // AuthInterceptorConfig holds the configuration for the AuthInterceptor.
