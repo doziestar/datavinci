@@ -52,8 +52,9 @@ func TestPasswordHasherHashPassword(t *testing.T) {
 		hashedPassword, err := hasher.HashPassword(password)
 		require.NoError(t, err, "HashPassword should not return an error")
 
-		match := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-		assert.NoError(t, match, "Passwords should match")
+		match, err := hasher.VerifyPassword(hashedPassword, password)
+		assert.NoError(t, err, "Passwords should match")
+		assert.True(t, match, "Passwords should match")
 	})
 
 	t.Run("VerifyPasswordWithInvalidPassword", func(t *testing.T) {
@@ -61,8 +62,10 @@ func TestPasswordHasherHashPassword(t *testing.T) {
 		hashedPassword, err := hasher.HashPassword("myPassword123")
 		require.NoError(t, err, "HashPassword should not return an error")
 
-		match := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte("myPassword1234"))
-		assert.Error(t, match, "Passwords should not match")
+		match, err := hasher.VerifyPassword(hashedPassword, "invalidPassword")
+		assert.False(t, match, "Passwords should not match")
+		assert.NoError(t, err, "Passwords should not match")
+
 	})
 
 	t.Run("VerifyPasswordWithEmptyPassword", func(t *testing.T) {
@@ -70,7 +73,9 @@ func TestPasswordHasherHashPassword(t *testing.T) {
 		hashedPassword, err := hasher.HashPassword("myPassword123")
 		require.NoError(t, err, "HashPassword should not return an error")
 
-		match := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(""))
-		assert.Error(t, match, "Passwords should not match")
+		match, err := hasher.VerifyPassword(hashedPassword, "")
+		assert.False(t, match, "Passwords should not match")
+		assert.Error(t, err, "Passwords should not match")
+		assert.Contains(t, err.Error(), "Password cannot be empty")
 	})
 }
