@@ -8,8 +8,6 @@ package interceptor
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -17,12 +15,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
-
-	"pkg/config"
 )
 
 // contextKey is a custom type for context keys to avoid collisions.
@@ -154,219 +146,27 @@ func NewAuthInterceptor(opts ...AuthInterceptorOption) grpc.UnaryServerIntercept
 
 // authInterceptor is the core function that performs the authentication.
 func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, config *AuthInterceptorConfig) (interface{}, error) {
-	// Apply rate limiting
-	if err := config.RateLimiter.Wait(ctx); err != nil {
-		config.Logger.Warn("Rate limit exceeded", zap.Error(err))
-		return nil, status.Errorf(codes.ResourceExhausted, "Rate limit exceeded")
+	if err := validateConfig(config); err != nil {
+		return nil, err
 	}
 
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		config.Logger.Warn("Missing metadata")
-		return nil, status.Errorf(codes.Unauthenticated, "Missing metadata")
+	if err := applyRateLimiting(ctx, config); err != nil {
+		return nil, err
 	}
 
-	authHeader, ok := md[config.MetadataKey]
-	if !ok || len(authHeader) == 0 {
-		config.Logger.Warn("Missing authorization header")
-		return nil, status.Errorf(codes.Unauthenticated, "Missing authorization header")
+	authToken, authScheme, err := extractAuthInfo(ctx, config)
+	if err != nil {
+		return nil, err
 	}
 
-	authParts := strings.SplitN(authHeader[0], " ", 2)
-	if len(authParts) != 2 {
-		config.Logger.Warn("Invalid authorization header format")
-		return nil, status.Errorf(codes.Unauthenticated, "Invalid authorization header format")
-	}
-
-	authScheme := AuthScheme(authParts[0])
-	authToken := authParts[1]
-
-	var claims jwt.MapClaims
-	var err error
-
-	switch authScheme {
-	case JWT:
-		claims, err = config.TokenValidator(authToken)
-		if err != nil {
-			config.Logger.Warn("Invalid JWT token", zap.Error(err))
-			return nil, status.Errorf(codes.Unauthenticated, "Invalid token: %v", err)
-		}
-
-		// Check if token needs refresh
-		if exp, ok := claims["exp"].(float64); ok {
-			expTime := time.Unix(int64(exp), 0)
-			if time.Until(expTime) < config.TokenRefreshWindow {
-				newToken, err := config.RefreshTokenFunc(authToken)
-				if err != nil {
-					config.Logger.Warn("Failed to refresh token", zap.Error(err))
-				} else {
-					// Add the new token to the outgoing context
-					md.Set("new-token", newToken)
-					ctx = metadata.NewOutgoingContext(ctx, md)
-				}
-			}
-		}
-
-	case APIKey:
-		valid, err := validateAPIKey(authToken, config)
-		if err != nil || !valid {
-			config.Logger.Warn("Invalid API key", zap.Error(err))
-			return nil, status.Errorf(codes.Unauthenticated, "Invalid API key")
-		}
-		claims = jwt.MapClaims{"api_key": authToken}
-
-	default:
-		config.Logger.Warn("Unsupported authentication scheme", zap.String("scheme", string(authScheme)))
-		return nil, status.Errorf(codes.Unauthenticated, "Unsupported authentication scheme")
+	claims, err := authenticateRequest(ctx, authToken, authScheme, config)
+	if err != nil {
+		return nil, err
 	}
 
 	newCtx := context.WithValue(ctx, userClaimsKey, claims)
-
-	// Log the authenticated request
-	peer, _ := peer.FromContext(ctx)
-	config.Logger.Info("Authenticated request",
-		zap.String("method", info.FullMethod),
-		zap.String("peer", peer.Addr.String()),
-		zap.Any("claims", claims),
-	)
+	logAuthenticatedRequest(newCtx, info, config, claims)
 
 	return handler(newCtx, req)
 }
 
-// defaultTokenValidator is the default implementation of JWT token validation.
-//
-// This function parses and validates a JWT token using a secret key.
-// In a production environment, you should replace this with your own
-// implementation that uses your secret key and includes any additional
-// validation logic specific to your application.
-func defaultTokenValidator(tokenString string) (jwt.MapClaims, error) {
-	conf, err := config.Load()
-	if err != nil {
-		return nil, err
-	}
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(conf.JWTSecret), nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return claims, nil
-	}
-
-	return nil, fmt.Errorf("invalid token")
-}
-
-// defaultAPIKeyValidator is the default implementation of API key validation.
-func defaultAPIKeyValidator(apiKey string) (bool, error) {
-	validKeys := map[string]bool{
-		"valid-api-key-1": true,
-		"valid-api-key-2": true,
-		"myApiKey":        true,
-	}
-
-	isValid, exists := validKeys[apiKey]
-	if !exists {
-		return false, nil
-	}
-	return isValid, nil
-}
-
-// validateAPIKey checks the validity of an API key, using caching for performance.
-func validateAPIKey(apiKey string, config *AuthInterceptorConfig) (bool, error) {
-	// Check cache first
-	if valid, found := config.APIKeyCache.Get(apiKey); found {
-		return valid.(bool), nil
-	}
-
-	// If not in cache, validate using the provided validator
-	valid, err := config.APIKeyValidator(apiKey)
-	if err != nil {
-		return false, err
-	}
-
-	// Cache the result
-	config.APIKeyCache.Set(apiKey, valid, cache.DefaultExpiration)
-
-	return valid, nil
-}
-
-// defaultRefreshTokenFunc is the default implementation of token refresh.
-func defaultRefreshTokenFunc(oldToken string) (string, error) {
-	return "new-refreshed-token-" + oldToken[len(oldToken)-5:], nil
-}
-
-// GetUserClaims retrieves the user claims from the context.
-//
-// This function can be used in your gRPC handlers to access the
-// authenticated user's claims.
-//
-// Usage:
-//
-//	func (s *server) SomeMethod(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-//		claims, ok := interceptor.GetUserClaims(ctx)
-//		if !ok {
-//			return nil, status.Errorf(codes.Unauthenticated, "No user claims found")
-//		}
-//		// Use claims...
-//	}
-func GetUserClaims(ctx context.Context) (jwt.MapClaims, bool) {
-	claims, ok := ctx.Value(userClaimsKey).(jwt.MapClaims)
-	return claims, ok
-}
-
-
-// AuthMetadataKey is a helper function to get the metadata key for authentication.
-//
-// Parameters:
-//   - ctx: The context from which to extract the metadata.
-//
-// Returns:
-//   - The authentication metadata key and a boolean indicating if it was found.
-//
-// Usage:
-//
-//	key, ok := AuthMetadataKey(ctx)
-//	if !ok {
-//	    return status.Errorf(codes.Unauthenticated, "Missing authentication metadata")
-//	}
-func AuthMetadataKey(ctx context.Context) (string, bool) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return "", false
-	}
-
-	values := md.Get("authorization")
-	if len(values) == 0 {
-		return "", false
-	}
-
-	return values[0], true
-}
-
-// ExtractBearerToken is a helper function to extract the Bearer token from an authorization header.
-//
-// Parameters:
-//   - authHeader: The full authorization header.
-//
-// Returns:
-//   - The Bearer token and an error if extraction fails.
-//
-// Usage:
-//
-//	token, err := ExtractBearerToken(authHeader)
-//	if err != nil {
-//	    return status.Errorf(codes.Unauthenticated, "Invalid authorization header")
-//	}
-func ExtractBearerToken(authHeader string) (string, error) {
-	parts := strings.SplitN(authHeader, " ", 2)
-	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-		return "", fmt.Errorf("invalid authorization header format")
-	}
-	return parts[1], nil
-}
