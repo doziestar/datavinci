@@ -28,6 +28,8 @@ var ErrorMessages = map[ErrorType]string{
 	ErrorTypeNotFound:   "not found",
 	ErrorTypeConnection : "connection",
 	ErrorTypeTransformation: "transformation",
+	ErrorTypeEmptyPassword: "empty password",
+	ErrorTypeInvalidCost: "invalid bcrypt cost",
 }
 
 const (
@@ -59,6 +61,10 @@ const (
 	ErrorTypeConnection
 	// ErrorTypeTransformation represents a transformation error.
 	ErrorTypeTransformation
+	// ErrorTypeEmptyPassword represents an empty password error.
+	ErrorTypeEmptyPassword
+	// ErrorTypeInvalidCost represents an invalid bcrypt cost error.
+	ErrorTypeInvalidCost
 )
 
 // Error represents a custom error with additional context.
