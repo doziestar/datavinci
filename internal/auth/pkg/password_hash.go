@@ -47,3 +47,32 @@ func (ph *PasswordHasher) HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), ph.cost)
 	return string(bytes), err
 }
+
+// VerifyPassword verifies a password against a hashed password.
+//
+// Parameters:
+//   - hashedPassword: The hashed password.
+//   - password: The password to verify.
+//
+// Returns:
+//   - True if the password matches the hashed password, false otherwise.
+//
+// Usage:
+//
+//	valid, err := hasher.VerifyPassword(hashedPassword, "myPassword123")
+func (ph *PasswordHasher) VerifyPassword(hashedPassword, password string) (bool, error) {
+	if hashedPassword == "" {
+		return false, errors.NewError(errors.ErrorTypeEmptyPassword, "Hashed password cannot be empty", nil)
+	}
+	if password == "" {
+		return false, errors.NewError(errors.ErrorTypeEmptyPassword, "Password cannot be empty", nil)
+	}
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
