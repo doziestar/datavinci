@@ -7,19 +7,16 @@ on:
     branches: [main]
 
 jobs:
-  lint-test-build:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: "1.22"
-
       - name: Verify workspace
         run: go work sync
-
       - name: Check formatting
         run: |
           all_formatted=true
@@ -37,7 +34,6 @@ jobs:
             echo "Formatting errors found. Please run 'go fmt ./...' in each module to fix."
             exit 1
           fi
-
       - name: Run go vet
         run: |
           for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
@@ -45,16 +41,35 @@ jobs:
             go vet ./$dir/...
           done
 
-      - name: Install staticcheck
-        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+      # - name: Run goimports
+      #   run: |
+      #     for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+      #       echo "Running goimports in $dir"
+      #       goimports -l $dir
+      #     done
 
-      # - name: Run staticcheck
+      # - name: Run gocyclo
+      #   run: |
+      #     for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+      #       echo "Running gocyclo in $dir"
+      #       gocyclo -over 15 $dir
+      #     done
+
+      # - name: Static check
       #   run: |
       #     for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
       #       echo "Running staticcheck in $dir"
-      #       staticcheck ./$dir/...
+      #       staticcheck $dir
       #     done
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
       - name: Run tests
         run: |
           go work use .
@@ -62,7 +77,6 @@ jobs:
             echo "Running tests in $dir"
             go test -v -race -coverprofile=$dir/coverage.txt -covermode=atomic ./$dir/...
           done
-
       - name: Combine coverage
         run: |
           echo "mode: atomic" > coverage.txt
@@ -71,12 +85,24 @@ jobs:
               tail -n +2 $dir/coverage.txt >> coverage.txt
             fi
           done
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           file: ./coverage.txt
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage
+          path: coverage.txt
 
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
       - name: Build
         run: |
           for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
@@ -85,32 +111,17 @@ jobs:
           done
 
   deploy-coverage:
-    needs: lint-test-build
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v2
         with:
-          go-version: "1.22"
-
-      - name: Run tests and generate coverage
-        run: |
-          go work use .
-          echo "mode: atomic" > coverage.txt
-          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
-            echo "Running tests in $dir"
-            go test -v -coverprofile=$dir/coverage.tmp -covermode=atomic ./$dir/...
-            if [ -f $dir/coverage.tmp ]; then
-              tail -n +2 $dir/coverage.tmp >> coverage.txt
-              rm $dir/coverage.tmp
-            fi
-          done
-
+          name: coverage
       - name: Generate coverage HTML
-        run: go tool cover -html=coverage.txt -o coverage.html
-
+        run: |
+          go tool cover -html=coverage.txt -o coverage.html
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
