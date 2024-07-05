@@ -24,7 +24,7 @@ type roleTestSuite struct {
 func setupRoleTestSuite(t *testing.T) *roleTestSuite {
 	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
 	require.NotNil(t, client, "Ent client should not be nil")
-	
+
 	return &roleTestSuite{
 		client: client,
 		repo:   repository.NewRoleRepository(client),
