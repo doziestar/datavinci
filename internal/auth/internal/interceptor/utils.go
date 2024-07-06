@@ -58,9 +58,6 @@ func extractAuthInfo(ctx context.Context, config *AuthInterceptorConfig) (string
 		return "", "", status.Errorf(codes.Unauthenticated, "Invalid authorization header format")
 	}
 
-	fmt.Println("authParts[1]: ", authParts[1])
-	fmt.Println("authParts[0]: ", authParts[0])
-
 	return authParts[1], AuthScheme(authParts[0]), nil
 }
 

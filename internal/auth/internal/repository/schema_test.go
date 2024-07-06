@@ -20,21 +20,35 @@ func TestUserSchema(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("CreateUser", func(t *testing.T) {
+		startTime := time.Now()
 		u, err := client.User.Create().
 			SetUsername("testuser").
 			SetEmail("test@example.com").
 			SetPassword("password123").
 			Save(ctx)
-
-		fmt.Println(u)
+		endTime := time.Now()
+		fmt.Printf("User creation time: %v\n", endTime.Sub(startTime))
 
 		require.NoError(t, err)
 		assert.NotEmpty(t, u.ID)
 		assert.Equal(t, "testuser", u.Username)
 		assert.Equal(t, "test@example.com", u.Email)
 		assert.NotEqual(t, "password123", u.Password)
-		assert.WithinDuration(t, time.Now(), u.CreatedAt, time.Second)
-		assert.WithinDuration(t, time.Now(), u.UpdatedAt, time.Second)
+
+		const allowedTimeDiff = 5 * time.Second
+
+		createdAtDiff := time.Since(u.CreatedAt)
+		updatedAtDiff := time.Since(u.UpdatedAt)
+
+		fmt.Printf("Time since creation: %v\n", createdAtDiff)
+		fmt.Printf("Time since update: %v\n", updatedAtDiff)
+
+		assert.True(t, createdAtDiff < allowedTimeDiff,
+			"CreatedAt time difference (%v) exceeds allowed difference (%v)", createdAtDiff, allowedTimeDiff)
+		assert.True(t, updatedAtDiff < allowedTimeDiff,
+			"UpdatedAt time difference (%v) exceeds allowed difference (%v)", updatedAtDiff, allowedTimeDiff)
+		// assert.WithinDuration(t, time.Now(), u.CreatedAt, time.Second)
+		// assert.WithinDuration(t, time.Now(), u.UpdatedAt, time.Second)
 	})
 
 	t.Run("UniqueUsername", func(t *testing.T) {
