@@ -1,0 +1,14 @@
+go 1.22
+
+toolchain go1.22.5
+
+use (
+	.
+	./internal/ai
+	./internal/auth
+	./internal/datasource
+	./internal/realtime
+	./internal/report
+	./internal/visualization
+	./pkg
+)

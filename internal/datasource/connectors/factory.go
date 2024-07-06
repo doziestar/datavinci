@@ -20,5 +20,4 @@ func ConnectorFactory(config *Config) (Connector, error) {
 	default:
 		return nil, fmt.Errorf("unsupported connector type: %s", config.Type)
 	}
-	return nil, fmt.Errorf("connector type not implemented: %s", config.Type)
 }

@@ -1,0 +1,134 @@
+name: Go CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
+      - name: Verify workspace
+        run: go work sync
+      - name: Check formatting
+        run: |
+          all_formatted=true
+          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+            echo "Checking formatting in $dir"
+            if [ -n "$(gofmt -s -l $dir)" ]; then
+              echo "Formatting issues in $dir:"
+              gofmt -s -l $dir
+              all_formatted=false
+            else
+              echo "No formatting issues in $dir"
+            fi
+          done
+          if [ "$all_formatted" = false ]; then
+            echo "Formatting errors found. Please run 'go fmt ./...' in each module to fix."
+            exit 1
+          fi
+      - name: Run go vet
+        run: |
+          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+            echo "Running go vet in $dir"
+            go vet ./$dir/...
+          done
+
+      # - name: Run goimports
+      #   run: |
+      #     for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+      #       echo "Running goimports in $dir"
+      #       goimports -l $dir
+      #     done
+
+      # - name: Run gocyclo
+      #   run: |
+      #     for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+      #       echo "Running gocyclo in $dir"
+      #       gocyclo -over 15 $dir
+      #     done
+
+      # - name: Static check
+      #   run: |
+      #     for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+      #       echo "Running staticcheck in $dir"
+      #       staticcheck $dir
+      #     done
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
+      - name: Run tests
+        run: |
+          go work use .
+          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+            echo "Running tests in $dir"
+            go test -v -race -coverprofile=$dir/coverage.txt -covermode=atomic ./$dir/...
+          done
+      - name: Combine coverage
+        run: |
+          echo "mode: atomic" > coverage.txt
+          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+            if [ -f $dir/coverage.txt ]; then
+              tail -n +2 $dir/coverage.txt >> coverage.txt
+            fi
+          done
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.txt
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage
+          path: coverage.txt
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
+      - name: Build
+        run: |
+          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+            echo "Building in $dir"
+            go build -v ./$dir/...
+          done
+
+  deploy-coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: coverage
+      - name: Generate coverage HTML
+        run: |
+          go tool cover -html=coverage.txt -o coverage.html
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          keep_files: true
+          user_name: "github-actions[bot]"
+          user_email: "github-actions[bot]@users.noreply.github.com"
+          commit_message: "Deploy coverage report to GitHub Pages"

@@ -422,17 +422,21 @@ func (r *RoleRepository) AddPermission(ctx context.Context, roleID, permission s
 }
 
 func (r *RoleRepository) RemovePermission(ctx context.Context, roleID, permission string) error {
-	role, err := r.GetByID(ctx, roleID)
+	roleData, err := r.GetByID(ctx, roleID)
 	if err != nil {
 		return err
 	}
 
 	updatedPermissions := make([]string, 0)
-	for _, p := range role.Permissions {
+	for _, p := range roleData.Permissions {
 		if p != permission {
 			updatedPermissions = append(updatedPermissions, p)
 		}
 	}
+
+	var newName = updatedPermissions
+
+	println(newName)
 
 	return r.client.Role.UpdateOneID(roleID).
 		SetPermissions(updatedPermissions).
@@ -440,11 +444,11 @@ func (r *RoleRepository) RemovePermission(ctx context.Context, roleID, permissio
 }
 
 func (r *RoleRepository) GetPermissions(ctx context.Context, roleID string) ([]string, error) {
-	role, err := r.GetByID(ctx, roleID)
+	roleData, err := r.GetByID(ctx, roleID)
 	if err != nil {
 		return nil, err
 	}
-	return role.Permissions, nil
+	return roleData.Permissions, nil
 }
 
 func (r *RoleRepository) AddUserToRole(ctx context.Context, roleID, userID string) error {
@@ -460,19 +464,19 @@ func (r *RoleRepository) RemoveUserFromRole(ctx context.Context, roleID, userID 
 }
 
 func (r *RoleRepository) GetUsersInRole(ctx context.Context, roleID string) ([]*ent.User, error) {
-	role, err := r.client.Role.Query().
+	roleData, err := r.client.Role.Query().
 		Where(role.ID(roleID)).
 		WithUsers().
 		Only(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return role.Edges.Users, nil
+	return roleData.Edges.Users, nil
 }
 
 func (r *RoleRepository) Search(ctx context.Context, query string) ([]*ent.Role, error) {
 	return r.client.Role.Query().
-		Where(role.NameContains(query)).
+		Where(role.NameHasPrefix(query)).
 		All(ctx)
 }
 

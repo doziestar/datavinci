@@ -1,0 +1,8 @@
+JWTSecret:
+  value: "secret"
+DatabaseURL:
+  value: "postgres://postgres:password@localhost:5432/postgres"
+AuthServiceAddress:
+  value: "localhost:8080"
+AuthzServiceAddress:
+  value: "localhost:8081"

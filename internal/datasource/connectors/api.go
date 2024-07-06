@@ -20,17 +20,17 @@ import (
 // APIConnector implements the Connector interface for API data sources.
 // It supports both RESTful HTTP APIs and WebSocket connections, as well as periodic polling.
 type APIConnector struct {
-	client        *http.Client
-	config        *Config
-	baseURL       string
-	wsConn        *websocket.Conn
-	wsBuffer      chan []byte
-	pollingTicker *time.Ticker
-	stopPolling   chan struct{}
-	wsLock           sync.Mutex
-    reconnectBackoff time.Duration
-    maxReconnectWait time.Duration
-    stopReadWebSocket chan struct{}
+	client            *http.Client
+	config            *Config
+	baseURL           string
+	wsConn            *websocket.Conn
+	wsBuffer          chan []byte
+	pollingTicker     *time.Ticker
+	stopPolling       chan struct{}
+	wsLock            sync.Mutex
+	reconnectBackoff  time.Duration
+	maxReconnectWait  time.Duration
+	stopReadWebSocket chan struct{}
 }
 
 // NewAPIConnector creates a new APIConnector with the given configuration.
@@ -57,12 +57,12 @@ func NewAPIConnector(config *Config) *APIConnector {
 		client: &http.Client{
 			Timeout: time.Duration(config.TimeoutSeconds) * time.Second,
 		},
-		baseURL:     config.BaseURL,
-		wsBuffer:    make(chan []byte, config.WebSocketBufferSize),
-		stopPolling: make(chan struct{}),
-		reconnectBackoff: time.Second,
-        maxReconnectWait: 2 * time.Minute,
-        stopReadWebSocket: make(chan struct{}),
+		baseURL:           config.BaseURL,
+		wsBuffer:          make(chan []byte, config.WebSocketBufferSize),
+		stopPolling:       make(chan struct{}),
+		reconnectBackoff:  time.Second,
+		maxReconnectWait:  2 * time.Minute,
+		stopReadWebSocket: make(chan struct{}),
 	}
 }
 
@@ -104,19 +104,19 @@ func (c *APIConnector) Connect(ctx context.Context) error {
 //	    log.Printf("Error closing connector: %v", err)
 //	}
 func (c *APIConnector) Close(ctx context.Context) error {
-    if c.wsConn != nil {
-        c.stopReadWebSocket <- struct{}{}
-        err := c.wsConn.Close()
-        c.wsConn = nil
-        return err
-    }
+	if c.wsConn != nil {
+		c.stopReadWebSocket <- struct{}{}
+		err := c.wsConn.Close()
+		c.wsConn = nil
+		return err
+	}
 
-    if c.pollingTicker != nil {
-        c.stopPolling <- struct{}{}
-        c.pollingTicker.Stop()
-    }
+	if c.pollingTicker != nil {
+		c.stopPolling <- struct{}{}
+		c.pollingTicker.Stop()
+	}
 
-    return nil
+	return nil
 }
 
 // Query executes a request to the API and returns the results.
@@ -147,67 +147,67 @@ func (c *APIConnector) Query(ctx context.Context, query string, args ...interfac
 
 // connectWebSocket establishes a WebSocket connection to the API.
 func (c *APIConnector) connectWebSocket(ctx context.Context) error {
-    dialer := websocket.Dialer{
-        HandshakeTimeout: time.Duration(c.config.TimeoutSeconds) * time.Second,
-    }
+	dialer := websocket.Dialer{
+		HandshakeTimeout: time.Duration(c.config.TimeoutSeconds) * time.Second,
+	}
 
-    conn, _, err := dialer.DialContext(ctx, c.baseURL, nil)
-    if err != nil {
-        return errors.NewError(errors.ErrorTypeApiConnection, "failed to connect to WebSocket", err)
-    }
+	conn, _, err := dialer.DialContext(ctx, c.baseURL, nil)
+	if err != nil {
+		return errors.NewError(errors.ErrorTypeAPIConnection, "failed to connect to WebSocket", err)
+	}
 
-    c.wsConn = conn
-    return nil
+	c.wsConn = conn
+	return nil
 }
 
 // readWebSocket continuously reads messages from the WebSocket connection
 // and sends them to the wsBuffer channel.
 func (c *APIConnector) readWebSocket() {
-    defer func() {
-        close(c.wsBuffer)
-        close(c.stopReadWebSocket)
-    }()
+	defer func() {
+		close(c.wsBuffer)
+		close(c.stopReadWebSocket)
+	}()
 
-    for {
-        _, message, err := c.wsConn.ReadMessage()
-        if err != nil {
-            select {
-            case <-c.stopReadWebSocket:
-                return
-            default:
-                log.Printf("WebSocket read error: %v", err)
-                if err := c.reconnectWebSocket(); err != nil {
-                    log.Printf("Failed to reconnect WebSocket: %v", err)
-                    return
-                }
-                continue
-            }
-        }
-        c.wsBuffer <- message
-    }
+	for {
+		_, message, err := c.wsConn.ReadMessage()
+		if err != nil {
+			select {
+			case <-c.stopReadWebSocket:
+				return
+			default:
+				log.Printf("WebSocket read error: %v", err)
+				if err := c.reconnectWebSocket(); err != nil {
+					log.Printf("Failed to reconnect WebSocket: %v", err)
+					return
+				}
+				continue
+			}
+		}
+		c.wsBuffer <- message
+	}
 }
 
 // reconnectWebSocket attempts to reconnect the WebSocket with exponential backoff
 func (c *APIConnector) reconnectWebSocket() error {
-    c.wsLock.Lock()
-    defer c.wsLock.Unlock()
+	c.wsLock.Lock()
+	defer c.wsLock.Unlock()
 
-    backoff := c.reconnectBackoff
-    for {
-        log.Printf("Attempting to reconnect WebSocket in %v", backoff)
-        time.Sleep(backoff)
+	backoff := c.reconnectBackoff
+	for {
+		log.Printf("Attempting to reconnect WebSocket in %v", backoff)
+		time.Sleep(backoff)
 
-        if err := c.connectWebSocket(context.Background()); err == nil {
-            log.Println("Successfully reconnected WebSocket")
-            c.reconnectBackoff = time.Second // Reset backoff on successful connection
-            return nil
-        }
+		if err := c.connectWebSocket(context.Background()); err == nil {
+			log.Println("Successfully reconnected WebSocket")
+			c.reconnectBackoff = time.Second // Reset backoff on successful connection
+			return nil
+		}
 
-        backoff *= 2
-        if backoff > c.maxReconnectWait {
-            backoff = c.maxReconnectWait
-        }
-    }
+		backoff *= 2
+		if backoff > c.maxReconnectWait {
+			backoff = c.maxReconnectWait
+		}
+	}
 }
 
 // queryWebSocket returns the latest message received from the WebSocket connection.
@@ -357,7 +357,7 @@ func (c *APIConnector) Execute(ctx context.Context, command string, args ...inte
 func (c *APIConnector) Ping(ctx context.Context) error {
 	if c.config.IsWebSocket {
 		if c.wsConn == nil {
-			return errors.NewError(errors.ErrorTypeApiConnection, "WebSocket connection not established", nil)
+			return errors.NewError(errors.ErrorTypeAPIConnection, "WebSocket connection not established", nil)
 		}
 		return nil
 	}

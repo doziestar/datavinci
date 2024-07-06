@@ -45,11 +45,12 @@ type Transformer struct{}
 //     fmt.Printf("Name: %v\n", resultValue.FieldByName("Name").Interface())
 //     fmt.Printf("Age: %v\n", resultValue.FieldByName("Age").Interface())
 
-//     // Access nested struct
-//     address := resultValue.FieldByName("Address").Interface()
-//     addressValue := reflect.ValueOf(address)
-//     fmt.Printf("City: %v\n", addressValue.FieldByName("City").Interface())
-//    fmt.Printf("Zip: %v\n", addressValue.FieldByName("Zip").Interface())
+//	 // Access nested struct
+//	 address := resultValue.FieldByName("Address").Interface()
+//	 addressValue := reflect.ValueOf(address)
+//	 fmt.Printf("City: %v\n", addressValue.FieldByName("City").Interface())
+//	fmt.Printf("Zip: %v\n", addressValue.FieldByName("Zip").Interface())
+//
 // ```
 func NewTransformer() *Transformer {
 	return &Transformer{}
@@ -73,111 +74,111 @@ func (t *Transformer) TransformData(data interface{}, targetFormat string) (inte
 
 // toStruct converts data to a struct using reflection
 func (t *Transformer) toStruct(data interface{}) (interface{}, error) {
-    dataValue := reflect.ValueOf(data)
-    if dataValue.Kind() == reflect.Ptr {
-        dataValue = dataValue.Elem()
-    }
+	dataValue := reflect.ValueOf(data)
+	if dataValue.Kind() == reflect.Ptr {
+		dataValue = dataValue.Elem()
+	}
 
-    switch dataValue.Kind() {
-    case reflect.Struct:
-        return data, nil // Already a struct
-    case reflect.Map:
-        return t.mapToStruct(dataValue)
-    default:
-        return nil, errors.NewError(errors.ErrorTypeTransformation, "unsupported data type for struct conversion", nil)
-    }
+	switch dataValue.Kind() {
+	case reflect.Struct:
+		return data, nil // Already a struct
+	case reflect.Map:
+		return t.mapToStruct(dataValue)
+	default:
+		return nil, errors.NewError(errors.ErrorTypeTransformation, "unsupported data type for struct conversion", nil)
+	}
 }
 
 // mapToStruct converts a map to a struct
 func (t *Transformer) mapToStruct(mapValue reflect.Value) (interface{}, error) {
-    if mapValue.Kind() != reflect.Map {
-        return nil, errors.NewError(errors.ErrorTypeTransformation, "input is not a map", nil)
-    }
+	if mapValue.Kind() != reflect.Map {
+		return nil, errors.NewError(errors.ErrorTypeTransformation, "input is not a map", nil)
+	}
 
-    structType := reflect.StructOf(t.mapToStructFields(mapValue))
-    structValue := reflect.New(structType).Elem()
+	structType := reflect.StructOf(t.mapToStructFields(mapValue))
+	structValue := reflect.New(structType).Elem()
 
-    for _, key := range mapValue.MapKeys() {
-        fieldName := t.normalizeFieldName(key.String())
-        fieldValue := mapValue.MapIndex(key)
+	for _, key := range mapValue.MapKeys() {
+		fieldName := t.normalizeFieldName(key.String())
+		fieldValue := mapValue.MapIndex(key)
 
-        if structValue.FieldByName(fieldName).IsValid() {
-            if err := t.setStructField(structValue.FieldByName(fieldName), fieldValue); err != nil {
-                return nil, err
-            }
-        }
-    }
+		if structValue.FieldByName(fieldName).IsValid() {
+			if err := t.setStructField(structValue.FieldByName(fieldName), fieldValue); err != nil {
+				return nil, err
+			}
+		}
+	}
 
-    return structValue.Interface(), nil
+	return structValue.Interface(), nil
 }
 
 // mapToStructFields creates struct fields from a map
 func (t *Transformer) mapToStructFields(mapValue reflect.Value) []reflect.StructField {
-    var fields []reflect.StructField
+	var fields []reflect.StructField
 
-    for _, key := range mapValue.MapKeys() {
-        fieldName := t.normalizeFieldName(key.String())
-        fieldValue := mapValue.MapIndex(key)
-        fieldType := fieldValue.Type()
+	for _, key := range mapValue.MapKeys() {
+		fieldName := t.normalizeFieldName(key.String())
+		fieldValue := mapValue.MapIndex(key)
+		fieldType := fieldValue.Type()
 
-        // Handle nested maps
-        if fieldValue.Kind() == reflect.Map {
-            nestedFields := t.mapToStructFields(fieldValue)
-            fieldType = reflect.StructOf(nestedFields)
-        }
+		// Handle nested maps
+		if fieldValue.Kind() == reflect.Map {
+			nestedFields := t.mapToStructFields(fieldValue)
+			fieldType = reflect.StructOf(nestedFields)
+		}
 
-        fields = append(fields, reflect.StructField{
-            Name: fieldName,
-            Type: fieldType,
-        })
-    }
+		fields = append(fields, reflect.StructField{
+			Name: fieldName,
+			Type: fieldType,
+		})
+	}
 
-    return fields
+	return fields
 }
 
 // setStructField sets the value of a struct field
 func (t *Transformer) setStructField(field reflect.Value, value reflect.Value) error {
-    if !field.CanSet() {
-        return errors.NewError(errors.ErrorTypeTransformation, "cannot set field value", nil)
-    }
+	if !field.CanSet() {
+		return errors.NewError(errors.ErrorTypeTransformation, "cannot set field value", nil)
+	}
 
-    if field.Kind() == reflect.Struct && value.Kind() == reflect.Map {
-        nestedStruct, err := t.mapToStruct(value)
-        if err != nil {
-            return err
-        }
-        field.Set(reflect.ValueOf(nestedStruct))
-        return nil
-    }
+	if field.Kind() == reflect.Struct && value.Kind() == reflect.Map {
+		nestedStruct, err := t.mapToStruct(value)
+		if err != nil {
+			return err
+		}
+		field.Set(reflect.ValueOf(nestedStruct))
+		return nil
+	}
 
-    if field.Type() != value.Type() {
-        if value.Type().ConvertibleTo(field.Type()) {
-            value = value.Convert(field.Type())
-        } else {
-            return errors.NewError(errors.ErrorTypeTransformation, "incompatible types for field assignment", nil)
-        }
-    }
+	if field.Type() != value.Type() {
+		if value.Type().ConvertibleTo(field.Type()) {
+			value = value.Convert(field.Type())
+		} else {
+			return errors.NewError(errors.ErrorTypeTransformation, "incompatible types for field assignment", nil)
+		}
+	}
 
-    field.Set(value)
-    return nil
+	field.Set(value)
+	return nil
 }
 
 // normalizeFieldName converts a string to a valid Go struct field name
 func (t *Transformer) normalizeFieldName(name string) string {
-    // Capitalize the first letter
-    name = strings.Title(name)
-    // Remove any characters that are not letters, numbers, or underscores
-    name = strings.Map(func(r rune) rune {
-        if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
-            return r
-        }
-        return -1
-    }, name)
-    // Ensure the field name starts with a letter
-    if len(name) > 0 && (name[0] >= '0' && name[0] <= '9') {
-        name = "F" + name
-    }
-    return name
+	// Capitalize the first letter
+	name = strings.Title(name)
+	// Remove any characters that are not letters, numbers, or underscores
+	name = strings.Map(func(r rune) rune {
+		if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			return r
+		}
+		return -1
+	}, name)
+	// Ensure the field name starts with a letter
+	if len(name) > 0 && (name[0] >= '0' && name[0] <= '9') {
+		name = "F" + name
+	}
+	return name
 }
 
 // toJSON converts data to JSON format

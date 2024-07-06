@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"auth/pkg"
 	"context"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // User holds the schema definition for the User entity.
@@ -54,7 +54,7 @@ func HashPassword() ent.Hook {
 	return func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			if password, ok := m.Field("password"); ok {
-				hash, err := bcrypt.GenerateFromPassword([]byte(password.(string)), bcrypt.DefaultCost)
+				hash, err := pkg.NewPasswordHasher(12).HashPassword(password.(string)) // HLc
 				if err != nil {
 					return nil, err
 				}

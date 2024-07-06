@@ -1,0 +1,21 @@
+{
+    "editor.formatOnSave": true,
+    "plugins": [
+        {
+            "type": "add",
+            "pluginName": "fleet.ai"
+        },
+        {
+            "type": "add",
+            "pluginName": "fleet.go.ai"
+        },
+        {
+            "type": "add",
+            "pluginName": "fleet.python.ai"
+        },
+        {
+            "type": "add",
+            "pluginName": "fleet.rust.ai"
+        }
+    ]
+}

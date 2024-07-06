@@ -18,7 +18,31 @@
 # vendor/
 
 # Go workspace file
-go.work
-go.work.sum
+# go.work
+# go.work.sum
 
 .env
+.fleet
+.idea
+.vscode
+*.log
+*.log.*
+*.log-*
+.DS_Store
+
+
+node_modules
+
+web/node_modules
+datavinci
+ai
+report
+realtime
+
+/internal/auth/coverage.txt
+/internal/datasource/coverage.txt
+/internal/visualization/coverage.txt
+/internal/realtime/coverage.txt
+/internal/report/coverage.txt
+/internal/ai/coverage.txt
+/pkg/coverage.txt

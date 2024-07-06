@@ -43,39 +43,39 @@ type TransactionConnector interface {
 // Config represents the configuration for a data connector.
 type Config struct {
 	// Type is the type of the data connector.
-	Type                    string
+	Type string
 	// Host is the hostname of the data source.
-	Host                    string
+	Host string
 	// Port is the port number of the data source.
-	Port                    int
+	Port int
 	// Username is the username for the data source.
-	Username                string
+	Username string
 	// Password is the password for the data source.
-	Password                string
+	Password string
 	// Database is the name of the database.
-	Database                string
+	Database string
 	// MaxOpenConns is the maximum number of open connections to the database.
-	MaxOpenConns            int
+	MaxOpenConns int
 	// MaxIdleConns is the maximum number of connections in the idle connection pool.
-	MaxIdleConns            int
+	MaxIdleConns int
 	// ConnMaxLifetimeSeconds is the maximum amount of time a connection may be reused.
-	ConnMaxLifetimeSeconds  int
+	ConnMaxLifetimeSeconds int
 	// ConnMaxIdleTimeSeconds is the maximum amount of time a connection may be idle before being closed.
-	Options                 map[string]interface{}
+	Options map[string]interface{}
 	// Driver is the driver name for the data source.
-	Driver                  string
+	Driver string
 	// RedisDB is the database number for Redis.
-	RedisDB                 int
+	RedisDB int
 	// IsWebSocket indicates whether the connection is a WebSocket.
-	IsWebSocket            bool
+	IsWebSocket bool
 	// WebSocketPath is the path for WebSocket connections.
-    PollingIntervalSeconds int
+	PollingIntervalSeconds int
 	// WebSocketBufferSize is the buffer size for WebSocket connections.
-    WebSocketBufferSize    int
+	WebSocketBufferSize int
 	// TimeoutSeconds is the timeout for the HTTP client.
-	TimeoutSeconds         int
+	TimeoutSeconds int
 	// BaseURL is the base URL for the API.
-	BaseURL                string
+	BaseURL string
 	// BasePath is the base path for the file connector.
-	BasePath               string
+	BasePath string
 }

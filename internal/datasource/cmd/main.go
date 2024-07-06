@@ -8,10 +8,11 @@ import (
 	"google.golang.org/grpc"
 
 	pb "datasource/grpc"
+
 	"google.golang.org/grpc/reflection"
 
-	"datasource/managers"
 	"datasource/grpc/server"
+	manager "datasource/managers"
 )
 
 type ServerConfig struct {
@@ -30,7 +31,7 @@ func SetupAndServe(config ServerConfig) error {
 
 	s := grpc.NewServer()
 	pb.RegisterDataSourceServiceServer(s, server)
-	
+
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 
