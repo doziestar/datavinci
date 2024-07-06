@@ -94,6 +94,10 @@ jobs:
         with:
           name: coverage
           path: coverage.txt
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   build:
     runs-on: ubuntu-latest
@@ -119,20 +123,30 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: coverage
-      - name: Generate coverage HTML
+      - name: Generate coverage HTML and index
         run: |
-          go tool cover -html=coverage.txt -o coverage.html
+          go tool cover -html=merged-coverage.txt -o coverage.html
+          echo '<!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta http-equiv="refresh" content="0;url=coverage.html">
+              <script type="text/javascript">
+                  window.location.href = "coverage.html"
+              </script>
+              <title>Page Redirection</title>
+          </head>
+          <body>
+              If you are not redirected automatically, follow this <a href="coverage.html">link to the coverage report</a>.
+          </body>
+          </html>' > index.html
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.TOKEN }}
           publish_dir: .
           publish_branch: gh-pages
-          keep_files: true
+          keep_files: false
           user_name: "github-actions[bot]"
           user_email: "github-actions[bot]@users.noreply.github.com"
           commit_message: "Deploy coverage report to GitHub Pages"
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
