@@ -168,6 +168,16 @@ Run the tests with:
 ```bash
 go test ./...
 cd web && yarn test && cd ..
+
+// or
+
+go test -v -race -coverprofile=pkg/coverage.txt -covermode=atomic ./internal/auth/...
+```
+
+To ensure that the code meets our standards, run the pre-commit hooks:
+
+```bash
+pre-commit run --all-files
 ```
 
 ### Linting
