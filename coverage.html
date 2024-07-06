@@ -8941,70 +8941,70 @@ func (e UserEdges) TokensOrErr() ([]*Token, error) <span class="cov0" title="0">
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*User) scanValues(columns []string) ([]any, error) <span class="cov7" title="41">{
+func (*User) scanValues(columns []string) ([]any, error) <span class="cov7" title="40">{
         values := make([]any, len(columns))
-        for i := range columns </span><span class="cov10" title="246">{
+        for i := range columns </span><span class="cov10" title="240">{
                 switch columns[i] </span>{
-                case user.FieldID, user.FieldUsername, user.FieldEmail, user.FieldPassword:<span class="cov9" title="164">
+                case user.FieldID, user.FieldUsername, user.FieldEmail, user.FieldPassword:<span class="cov9" title="160">
                         values[i] = new(sql.NullString)</span>
-                case user.FieldCreatedAt, user.FieldUpdatedAt:<span class="cov8" title="82">
+                case user.FieldCreatedAt, user.FieldUpdatedAt:<span class="cov8" title="80">
                         values[i] = new(sql.NullTime)</span>
                 default:<span class="cov0" title="0">
                         values[i] = new(sql.UnknownType)</span>
                 }
         }
-        <span class="cov7" title="41">return values, nil</span>
+        <span class="cov7" title="40">return values, nil</span>
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the User fields.
-func (u *User) assignValues(columns []string, values []any) error <span class="cov7" title="41">{
+func (u *User) assignValues(columns []string, values []any) error <span class="cov7" title="40">{
         if m, n := len(values), len(columns); m &lt; n </span><span class="cov0" title="0">{
                 return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
         }</span>
-        <span class="cov7" title="41">for i := range columns </span><span class="cov10" title="246">{
+        <span class="cov7" title="40">for i := range columns </span><span class="cov10" title="240">{
                 switch columns[i] </span>{
-                case user.FieldID:<span class="cov7" title="41">
+                case user.FieldID:<span class="cov7" title="40">
                         if value, ok := values[i].(*sql.NullString); !ok </span><span class="cov0" title="0">{
                                 return fmt.Errorf("unexpected type %T for field id", values[i])
-                        }</span> else<span class="cov7" title="41"> if value.Valid </span><span class="cov7" title="41">{
+                        }</span> else<span class="cov7" title="40"> if value.Valid </span><span class="cov7" title="40">{
                                 u.ID = value.String
                         }</span>
-                case user.FieldUsername:<span class="cov7" title="41">
+                case user.FieldUsername:<span class="cov7" title="40">
                         if value, ok := values[i].(*sql.NullString); !ok </span><span class="cov0" title="0">{
                                 return fmt.Errorf("unexpected type %T for field username", values[i])
-                        }</span> else<span class="cov7" title="41"> if value.Valid </span><span class="cov7" title="41">{
+                        }</span> else<span class="cov7" title="40"> if value.Valid </span><span class="cov7" title="40">{
                                 u.Username = value.String
                         }</span>
-                case user.FieldEmail:<span class="cov7" title="41">
+                case user.FieldEmail:<span class="cov7" title="40">
                         if value, ok := values[i].(*sql.NullString); !ok </span><span class="cov0" title="0">{
                                 return fmt.Errorf("unexpected type %T for field email", values[i])
-                        }</span> else<span class="cov7" title="41"> if value.Valid </span><span class="cov7" title="41">{
+                        }</span> else<span class="cov7" title="40"> if value.Valid </span><span class="cov7" title="40">{
                                 u.Email = value.String
                         }</span>
-                case user.FieldPassword:<span class="cov7" title="41">
+                case user.FieldPassword:<span class="cov7" title="40">
                         if value, ok := values[i].(*sql.NullString); !ok </span><span class="cov0" title="0">{
                                 return fmt.Errorf("unexpected type %T for field password", values[i])
-                        }</span> else<span class="cov7" title="41"> if value.Valid </span><span class="cov7" title="41">{
+                        }</span> else<span class="cov7" title="40"> if value.Valid </span><span class="cov7" title="40">{
                                 u.Password = value.String
                         }</span>
-                case user.FieldCreatedAt:<span class="cov7" title="41">
+                case user.FieldCreatedAt:<span class="cov7" title="40">
                         if value, ok := values[i].(*sql.NullTime); !ok </span><span class="cov0" title="0">{
                                 return fmt.Errorf("unexpected type %T for field created_at", values[i])
-                        }</span> else<span class="cov7" title="41"> if value.Valid </span><span class="cov7" title="41">{
+                        }</span> else<span class="cov7" title="40"> if value.Valid </span><span class="cov7" title="40">{
                                 u.CreatedAt = value.Time
                         }</span>
-                case user.FieldUpdatedAt:<span class="cov7" title="41">
+                case user.FieldUpdatedAt:<span class="cov7" title="40">
                         if value, ok := values[i].(*sql.NullTime); !ok </span><span class="cov0" title="0">{
                                 return fmt.Errorf("unexpected type %T for field updated_at", values[i])
-                        }</span> else<span class="cov7" title="41"> if value.Valid </span><span class="cov7" title="41">{
+                        }</span> else<span class="cov7" title="40"> if value.Valid </span><span class="cov7" title="40">{
                                 u.UpdatedAt = value.Time
                         }</span>
                 default:<span class="cov0" title="0">
                         u.selectValues.Set(columns[i], values[i])</span>
                 }
         }
-        <span class="cov7" title="41">return nil</span>
+        <span class="cov7" title="40">return nil</span>
 }
 
 // Value returns the ent.Value that was dynamically selected and assigned to the User.
@@ -10533,10 +10533,10 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
                         uq.withTokens != nil,
                 }
         )
-        _spec.ScanValues = func(columns []string) ([]any, error) </span><span class="cov9" title="28">{
+        _spec.ScanValues = func(columns []string) ([]any, error) </span><span class="cov9" title="27">{
                 return (*User).scanValues(nil, columns)
         }</span>
-        <span class="cov9" title="28">_spec.Assign = func(columns []string, values []any) error </span><span class="cov9" title="28">{
+        <span class="cov9" title="28">_spec.Assign = func(columns []string, values []any) error </span><span class="cov9" title="27">{
                 node := &amp;User{config: uq.config}
                 nodes = append(nodes, node)
                 node.Edges.loadedTypes = loadedTypes
