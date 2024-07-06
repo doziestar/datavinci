@@ -125,7 +125,7 @@ jobs:
           name: coverage
       - name: Generate coverage HTML and index
         run: |
-          go tool cover -html=merged-coverage.txt -o coverage.html
+          go tool cover -html=coverage.txt -o coverage.html
           echo '<!DOCTYPE html>
           <html lang="en">
           <head>
