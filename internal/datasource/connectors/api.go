@@ -153,7 +153,7 @@ func (c *APIConnector) connectWebSocket(ctx context.Context) error {
 
 	conn, _, err := dialer.DialContext(ctx, c.baseURL, nil)
 	if err != nil {
-		return errors.NewError(errors.ErrorTypeApiConnection, "failed to connect to WebSocket", err)
+		return errors.NewError(errors.ErrorTypeAPIConnection, "failed to connect to WebSocket", err)
 	}
 
 	c.wsConn = conn
@@ -357,7 +357,7 @@ func (c *APIConnector) Execute(ctx context.Context, command string, args ...inte
 func (c *APIConnector) Ping(ctx context.Context) error {
 	if c.config.IsWebSocket {
 		if c.wsConn == nil {
-			return errors.NewError(errors.ErrorTypeApiConnection, "WebSocket connection not established", nil)
+			return errors.NewError(errors.ErrorTypeAPIConnection, "WebSocket connection not established", nil)
 		}
 		return nil
 	}
