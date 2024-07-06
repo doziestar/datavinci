@@ -38,3 +38,11 @@ datavinci
 ai
 report
 realtime
+
+/internal/auth/coverage.txt
+/internal/datasource/coverage.txt
+/internal/visualization/coverage.txt
+/internal/realtime/coverage.txt
+/internal/report/coverage.txt
+/internal/ai/coverage.txt
+/pkg/coverage.txt
