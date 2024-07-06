@@ -4,6 +4,8 @@
 
 DataVinci is a comprehensive data management and visualization tool designed for the developer community. It enables users to visualize data from various sources, generate insights, analyze data with AI models, and receive real-time updates on anomalies.
 
+[![codecov](https://codecov.io/github/doziestar/datavinci/graph/badge.svg?token=PN33XKZTE5)](https://codecov.io/github/doziestar/datavinci)
+
 ## Table of Contents
 
 - [Features](#features)
