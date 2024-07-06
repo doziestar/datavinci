@@ -18110,7 +18110,7 @@ func NewPerIPRateLimiter(r rate.Limit, b int) *PerIPRateLimiter <span class="cov
 // Usage:
 //
 //        limiter.AddIP("126.0.0.1")
-func (l *PerIPRateLimiter) AddIP(ip string) *rate.Limiter <span class="cov4" title="14">{
+func (l *PerIPRateLimiter) AddIP(ip string) *rate.Limiter <span class="cov4" title="11">{
         l.mu.Lock()
         defer l.mu.Unlock()
 
@@ -18122,7 +18122,7 @@ func (l *PerIPRateLimiter) AddIP(ip string) *rate.Limiter <span class="cov4" tit
                 l.ips[ip] = limiter
         }</span>
 
-        <span class="cov4" title="14">return limiter</span>
+        <span class="cov4" title="11">return limiter</span>
 }
 
 // GetLimiter returns the rate limiter for the given IP address.
@@ -18141,11 +18141,11 @@ func (l *PerIPRateLimiter) GetLimiter(ip string) *rate.Limiter <span class="cov1
         limiter, exists := l.ips[ip]
         l.mu.RUnlock()
 
-        if !exists </span><span class="cov4" title="13">{
+        if !exists </span><span class="cov4" title="10">{
                 return l.AddIP(ip)
         }</span>
 
-        <span class="cov9" title="493">return limiter</span>
+        <span class="cov9" title="496">return limiter</span>
 }
 </pre>
 		
