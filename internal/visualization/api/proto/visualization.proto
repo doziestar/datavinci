@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package visualization;
+
+option go_package = "datavinci/internal/visualization/grpc";
+
+service VisualizationService {
+    rpc CreateVisualization(CreateVisualizationRequest) returns (VisualizationResponse) {}
+    rpc UpdateVisualization(UpdateVisualizationRequest) returns (VisualizationResponse) {}
+    rpc GetVisualization(GetVisualizationRequest) returns (VisualizationResponse) {}
+    rpc ListVisualizations(ListVisualizationsRequest) returns (ListVisualizationsResponse) {}
+    rpc DeleteVisualization(DeleteVisualizationRequest) returns (DeleteVisualizationResponse) {}
+    rpc ExportVisualization(ExportVisualizationRequest) returns (ExportVisualizationResponse) {}
+}
+
+message CreateVisualizationRequest {
+    string data_source_id = 1;
+    string visualization_type = 2;
+    repeated string dimensions = 3;
+    repeated string measures = 4;
+    map<string, string> filters = 5;
+    map<string, string> options = 6;
+}
+
+message UpdateVisualizationRequest {
+    string visualization_id = 1;
+    CreateVisualizationRequest update_data = 2;
+}
+
+message GetVisualizationRequest {
+    string visualization_id = 1;
+}
+
+message ListVisualizationsRequest {
+    int32 page = 1;
+    int32 page_size = 2;
+}
+
+message DeleteVisualizationRequest {
+    string visualization_id = 1;
+}
+
+message ExportVisualizationRequest {
+    string visualization_id = 1;
+    string format = 2;
+}
+
+message VisualizationResponse {
+    string visualization_id = 1;
+    bytes visualization_data = 2;
+    map<string, string> metadata = 3;
+}
+
+message ListVisualizationsResponse {
+    repeated VisualizationResponse visualizations = 1;
+    int32 total_count = 2;
+}
+
+message DeleteVisualizationResponse {
+    bool success = 1;
+}
+
+message ExportVisualizationResponse {
+    bytes exported_data = 1;
+    string format = 2;
+}

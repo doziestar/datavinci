@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datavinci
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: datavinci
+  template:
+    metadata:
+      labels:
+        app: datavinci
+    spec:
+      containers:
+        - name: datavinci
+          image: datavinci:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_HOST
+              value: postgres-service
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: password
+            - name: DB_NAME
+              value: datavinci
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datavinci-service
+spec:
+  selector:
+    app: datavinci
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer
