@@ -34,7 +34,7 @@ func main() {
 	userRepo := repository.NewUserRepository(client)
 	authzService := service.NewAuthzService(roleRepo, userRepo)
 
-	lis, err := net.Listen("tcp", cfg.AuthzServiceAddr)
+	lis, err := net.Listen("tcp", cfg.AuthzServiceAddress)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
@@ -53,7 +53,7 @@ func main() {
 	)
 	pb.RegisterAuthorizationServiceServer(grpcServer, authzService)
 
-	log.Printf("Starting Authz service on %s", cfg.AuthzServiceAddr)
+	log.Printf("Starting Authz service on %s", cfg.AuthzServiceAddress)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
