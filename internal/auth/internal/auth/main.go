@@ -35,7 +35,7 @@ func main() {
 	tokenRepo := repository.NewTokenRepository(client)
 	authService := service.NewAuthService(userRepo, tokenRepo, cfg.JWTSecret, time.Hour)
 
-	lis, err := net.Listen("tcp", cfg.AuthServiceAddr)
+	lis, err := net.Listen("tcp", cfg.AuthServiceAddress)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
@@ -56,7 +56,7 @@ func main() {
 
 	pb.RegisterAuthServiceServer(grpcServer, authService)
 
-	log.Printf("Starting Auth service on %s", cfg.AuthServiceAddr)
+	log.Printf("Starting Auth service on %s", cfg.AuthServiceAddress)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}

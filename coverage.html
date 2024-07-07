@@ -193,7 +193,7 @@
 				
 				<option value="file68">pkg/common/retry/retry.go (86.2%)</option>
 				
-				<option value="file69">pkg/config/config.go (0.0%)</option>
+				<option value="file69">pkg/config/config.go (93.8%)</option>
 				
 				<option value="file70">realtime/main.go (0.0%)</option>
 				
@@ -11558,7 +11558,7 @@ func main() <span class="cov0" title="0">{
         tokenRepo := repository.NewTokenRepository(client)
         authService := service.NewAuthService(userRepo, tokenRepo, cfg.JWTSecret, time.Hour)
 
-        lis, err := net.Listen("tcp", cfg.AuthServiceAddr)
+        lis, err := net.Listen("tcp", cfg.AuthServiceAddress)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("Failed to listen: %v", err)
         }</span>
@@ -11579,7 +11579,7 @@ func main() <span class="cov0" title="0">{
 
         pb.RegisterAuthServiceServer(grpcServer, authService)
 
-        log.Printf("Starting Auth service on %s", cfg.AuthServiceAddr)
+        log.Printf("Starting Auth service on %s", cfg.AuthServiceAddress)
         if err := grpcServer.Serve(lis); err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("Failed to serve: %v", err)
         }</span>
@@ -12013,7 +12013,7 @@ func main() <span class="cov0" title="0">{
         userRepo := repository.NewUserRepository(client)
         authzService := service.NewAuthzService(roleRepo, userRepo)
 
-        lis, err := net.Listen("tcp", cfg.AuthzServiceAddr)
+        lis, err := net.Listen("tcp", cfg.AuthzServiceAddress)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("Failed to listen: %v", err)
         }</span>
@@ -12032,7 +12032,7 @@ func main() <span class="cov0" title="0">{
         )
         pb.RegisterAuthorizationServiceServer(grpcServer, authzService)
 
-        log.Printf("Starting Authz service on %s", cfg.AuthzServiceAddr)
+        log.Printf("Starting Authz service on %s", cfg.AuthzServiceAddress)
         if err := grpcServer.Serve(lis); err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("Failed to serve: %v", err)
         }</span>
@@ -22523,32 +22523,44 @@ func calculateNextBackoff(currentBackoff time.Duration, config *Config) time.Dur
 		<pre class="file" id="file69" style="display: none">package config
 
 import (
+        "fmt"
+
         "github.com/spf13/viper"
 )
 
 type Config struct {
-        DatabaseURL      string
-        AuthServiceAddr  string
-        AuthzServiceAddr string
-        JWTSecret        string
+        DatabaseURL         string `mapstructure:"DatabaseURL"`
+        AuthServiceAddress  string `mapstructure:"AuthServiceAddress"`
+        AuthzServiceAddress string `mapstructure:"AuthzServiceAddress"`
+        JWTSecret           string `mapstructure:"JWTSecret"`
 }
 
-func Load() (*Config, error) <span class="cov0" title="0">{
+func Load() (*Config, error) <span class="cov10" title="8">{
         viper.SetConfigName("config")
         viper.SetConfigType("yaml")
         viper.AddConfigPath(".")
         viper.AddConfigPath("./config")
 
-        if err := viper.ReadInConfig(); err != nil </span><span class="cov0" title="0">{
-                return nil, err
-        }</span>
+        // Enable environment variable reading
+        viper.AutomaticEnv()
+        viper.BindEnv("DatabaseURL")
+        viper.BindEnv("AuthServiceAddress")
+        viper.BindEnv("AuthzServiceAddress")
+        viper.BindEnv("JWTSecret")
 
-        <span class="cov0" title="0">var cfg Config
+        // Read the config file
+        if err := viper.ReadInConfig(); err != nil </span><span class="cov4" title="2">{
+                if _, ok := err.(viper.ConfigFileNotFoundError); !ok </span><span class="cov1" title="1">{
+                        return nil, fmt.Errorf("error reading config file: %v", err)
+                }</span>
+        }
+
+        <span class="cov9" title="7">var cfg Config
         if err := viper.Unmarshal(&amp;cfg); err != nil </span><span class="cov0" title="0">{
-                return nil, err
+                return nil, fmt.Errorf("failed to unmarshal config: %v", err)
         }</span>
 
-        <span class="cov0" title="0">return &amp;cfg, nil</span>
+        <span class="cov9" title="7">return &amp;cfg, nil</span>
 }
 </pre>
 		
